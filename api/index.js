@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const healthRoutes = require('./routes/health');
+const geographyRoutes = require('./routes/v1/geography');
+const searchRoutes = require('./routes/v1/search');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -69,6 +71,10 @@ if (process.env.NODE_ENV !== 'production') {
 
 // Health & stats
 app.use('/api', healthRoutes);
+
+// V1 API Endpoints
+app.use('/api/v1', geographyRoutes);
+app.use('/api/v1', searchRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
