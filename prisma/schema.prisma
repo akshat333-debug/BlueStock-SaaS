@@ -1,0 +1,191 @@
+// Bluestock SaaS — Database Schema
+// 8 tables following Third Normal Form (3NF)
+// Hierarchy: Country → State → District → SubDistrict → Village
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// GEOGRAPHICAL HIERARCHY (5 tables)
+// ============================================
+
+model Country {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  code      String   @unique   // ISO code, e.g. "IN"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  states    State[]
+
+  @@map("countries")
+}
+
+model State {
+  id        Int      @id @default(autoincrement())
+  code      String               // MDDS STC, e.g. "27" for Maharashtra
+  name      String
+  countryId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  districts District[]
+  userAccess UserStateAccess[]
+
+  @@unique([code, countryId])
+  @@index([countryId])
+  @@map("states")
+}
+
+model District {
+  id        Int      @id @default(autoincrement())
+  code      String               // MDDS DTC
+  name      String
+  stateId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  state     State    @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  subDistricts SubDistrict[]
+
+  @@unique([code, stateId])
+  @@index([stateId])
+  @@map("districts")
+}
+
+model SubDistrict {
+  id         Int      @id @default(autoincrement())
+  code       String              // MDDS Sub_DT
+  name       String
+  districtId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  district   District @relation(fields: [districtId], references: [id], onDelete: Cascade)
+  villages   Village[]
+
+  @@unique([code, districtId])
+  @@index([districtId])
+  @@map("sub_districts")
+}
+
+model Village {
+  id            Int      @id @default(autoincrement())
+  code          String              // MDDS PLCN — unique village code
+  name          String
+  subDistrictId Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  subDistrict   SubDistrict @relation(fields: [subDistrictId], references: [id], onDelete: Cascade)
+
+  @@unique([code, subDistrictId])
+  @@index([subDistrictId])
+  @@index([name])           // For text search (trigram index added via raw SQL migration)
+  @@map("villages")
+}
+
+// ============================================
+// USER & ACCESS MANAGEMENT (4 tables)
+// ============================================
+
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  passwordHash  String
+  businessName  String?
+  gstNumber     String?
+  phone         String?
+  planType      PlanType @default(FREE)
+  status        UserStatus @default(PENDING_APPROVAL)
+  role          UserRole   @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  apiKeys       ApiKey[]
+  stateAccess   UserStateAccess[]
+  apiLogs       ApiLog[]
+
+  @@map("users")
+}
+
+model ApiKey {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique          // ak_[32hex] — public, sent in header
+  secretHash  String                    // bcrypt hash of as_[32hex]
+  name        String                    // e.g. "Production Server", "Staging"
+  userId      Int
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiLogs     ApiLog[]
+
+  @@index([key])
+  @@map("api_keys")
+}
+
+model UserStateAccess {
+  id      Int @id @default(autoincrement())
+  userId  Int
+  stateId Int
+
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  state   State @relation(fields: [stateId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stateId])
+  @@map("user_state_access")
+}
+
+model ApiLog {
+  id           Int      @id @default(autoincrement())
+  endpoint     String
+  method       String   @default("GET")
+  statusCode   Int
+  responseTime Int                    // milliseconds
+  ipAddress    String?
+  userAgent    String?
+  userId       Int?
+  apiKeyId     Int?
+  createdAt    DateTime @default(now())
+
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  apiKey       ApiKey?  @relation(fields: [apiKeyId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([apiKeyId])
+  @@map("api_logs")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum PlanType {
+  FREE
+  PREMIUM
+  PRO
+  UNLIMITED
+}
+
+enum UserStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
