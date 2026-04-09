@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+.env
+.env.local
+.env.*.local
+
+# Build outputs
+dist/
+build/
+.next/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Graphify intermediates (keep final outputs)
+graphify-out/.graphify_*
+graphify-out/cache/
+!graphify-out/.graphify_python
+
+# Obsidian workspace (user-specific)
+obsidian-vault/.obsidian/
+
+# Installers
+*.pkg
+*.dmg
+
+# Logs
+*.log
+npm-debug.log*

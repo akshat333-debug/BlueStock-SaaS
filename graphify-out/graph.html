@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>graphify - graphify-out/graph.html</title>
+<script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f1a; color: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
+  #graph { flex: 1; }
+  #sidebar { width: 280px; background: #1a1a2e; border-left: 1px solid #2a2a4e; display: flex; flex-direction: column; overflow: hidden; }
+  #search-wrap { padding: 12px; border-bottom: 1px solid #2a2a4e; }
+  #search { width: 100%; background: #0f0f1a; border: 1px solid #3a3a5e; color: #e0e0e0; padding: 7px 10px; border-radius: 6px; font-size: 13px; outline: none; }
+  #search:focus { border-color: #4E79A7; }
+  #search-results { max-height: 140px; overflow-y: auto; padding: 4px 12px; border-bottom: 1px solid #2a2a4e; display: none; }
+  .search-item { padding: 4px 6px; cursor: pointer; border-radius: 4px; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .search-item:hover { background: #2a2a4e; }
+  #info-panel { padding: 14px; border-bottom: 1px solid #2a2a4e; min-height: 140px; }
+  #info-panel h3 { font-size: 13px; color: #aaa; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+  #info-content { font-size: 13px; color: #ccc; line-height: 1.6; }
+  #info-content .field { margin-bottom: 5px; }
+  #info-content .field b { color: #e0e0e0; }
+  #info-content .empty { color: #555; font-style: italic; }
+  .neighbor-link { display: block; padding: 2px 6px; margin: 2px 0; border-radius: 3px; cursor: pointer; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 3px solid #333; }
+  .neighbor-link:hover { background: #2a2a4e; }
+  #neighbors-list { max-height: 160px; overflow-y: auto; margin-top: 4px; }
+  #legend-wrap { flex: 1; overflow-y: auto; padding: 12px; }
+  #legend-wrap h3 { font-size: 13px; color: #aaa; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; border-radius: 4px; font-size: 12px; }
+  .legend-item:hover { background: #2a2a4e; padding-left: 4px; }
+  .legend-item.dimmed { opacity: 0.35; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+  .legend-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-count { color: #666; font-size: 11px; }
+  #stats { padding: 10px 14px; border-top: 1px solid #2a2a4e; font-size: 11px; color: #555; }
+</style>
+</head>
+<body>
+<div id="graph"></div>
+<div id="sidebar">
+  <div id="search-wrap">
+    <input id="search" type="text" placeholder="Search nodes..." autocomplete="off">
+    <div id="search-results"></div>
+  </div>
+  <div id="info-panel">
+    <h3>Node Info</h3>
+    <div id="info-content"><span class="empty">Click a node to inspect it</span></div>
+  </div>
+  <div id="legend-wrap">
+    <h3>Communities</h3>
+    <div id="legend"></div>
+  </div>
+  <div id="stats">61 nodes &middot; 70 edges &middot; 6 communities</div>
+</div>
+<script>
+const RAW_NODES = [{"id": "project_overview_saas_platform", "label": "Bluestock SaaS Platform", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 40.0, "font": {"size": 12, "color": "#ffffff"}, "title": "Bluestock SaaS Platform", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Project_Overview.md", "file_type": "document", "degree": 7}, {"id": "project_overview_rest_api", "label": "REST API for Village Data", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 27.1, "font": {"size": 12, "color": "#ffffff"}, "title": "REST API for Village Data", "community": 4, "community_name": "API & B2B Integration", "source_file": "Project_Overview.md", "file_type": "document", "degree": 4}, {"id": "project_overview_b2b_clients", "label": "B2B Clients", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "B2B Clients", "community": 4, "community_name": "API & B2B Integration", "source_file": "Project_Overview.md", "file_type": "document", "degree": 2}, {"id": "project_overview_subscription_plans", "label": "Subscription Plans (Free/Premium/Pro/Unlimited)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Subscription Plans (Free/Premium/Pro/Unlimited)", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Project_Overview.md", "file_type": "document", "degree": 2}, {"id": "project_overview_address_hierarchy", "label": "Address Hierarchy (Country\u2192State\u2192District\u2192SubDistrict\u2192Village)", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Address Hierarchy (Country\u2192State\u2192District\u2192SubDistrict\u2192Village)", "community": 4, "community_name": "API & B2B Integration", "source_file": "Project_Overview.md", "file_type": "document", "degree": 2}, {"id": "project_overview_admin_panel", "label": "Admin Panel", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Admin Panel", "community": 1, "community_name": "User & API Key Management", "source_file": "Project_Overview.md", "file_type": "document", "degree": 2}, {"id": "project_overview_jwt_auth", "label": "JWT Authentication", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "JWT Authentication", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Project_Overview.md", "file_type": "document", "degree": 2}, {"id": "project_overview_redis_caching", "label": "Redis Caching (Upstash)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "Redis Caching (Upstash)", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Project_Overview.md", "file_type": "document", "degree": 3}, {"id": "project_overview_neondb", "label": "NeonDB PostgreSQL", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 35.7, "font": {"size": 12, "color": "#ffffff"}, "title": "NeonDB PostgreSQL", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "Project_Overview.md", "file_type": "document", "degree": 6}, {"id": "project_overview_vercel", "label": "Vercel Edge Deployment", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Vercel Edge Deployment", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Project_Overview.md", "file_type": "document", "degree": 2}, {"id": "objectives_skill_mastery", "label": "Skill Mastery Phase", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Skill Mastery Phase", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "project_objectives.md", "file_type": "document", "degree": 1}, {"id": "objectives_capstone", "label": "Capstone Project - All India Villages API", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Capstone Project - All India Villages API", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "project_objectives.md", "file_type": "document", "degree": 2}, {"id": "objectives_sql_skill", "label": "SQL & Database Design Skill", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "SQL &amp; Database Design Skill", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "project_objectives.md", "file_type": "document", "degree": 1}, {"id": "objectives_api_skill", "label": "API Development Skill (Node.js)", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "API Development Skill (Node.js)", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "project_objectives.md", "file_type": "document", "degree": 1}, {"id": "objectives_react_skill", "label": "React.js Frontend Skill", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "React.js Frontend Skill", "community": 5, "community_name": "Frontend Tech Stack", "source_file": "project_objectives.md", "file_type": "document", "degree": 1}, {"id": "objectives_data_cleaning", "label": "Data Cleaning & Processing (Python)", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Data Cleaning &amp; Processing (Python)", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "project_objectives.md", "file_type": "document", "degree": 1}, {"id": "phase1_nodejs_express", "label": "Node.js + Express.js Backend", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Node.js + Express.js Backend", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_prisma_orm", "label": "Prisma ORM", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Prisma ORM", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_react_vite", "label": "React.js + Vite Frontend", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "React.js + Vite Frontend", "community": 5, "community_name": "Frontend Tech Stack", "source_file": "Phase_1.md", "file_type": "document", "degree": 3}, {"id": "phase1_recharts", "label": "Recharts Charting Library", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Recharts Charting Library", "community": 5, "community_name": "Frontend Tech Stack", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_rate_limiting", "label": "Rate Limiting (express-rate-limit + Redis)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Rate Limiting (express-rate-limit + Redis)", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_client_layer", "label": "Client Layer (Admin/B2B/Demo SPAs)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Client Layer (Admin/B2B/Demo SPAs)", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_1.md", "file_type": "document", "degree": 1}, {"id": "phase1_api_gateway", "label": "API Gateway Layer", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "API Gateway Layer", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_serverless_functions", "label": "Serverless Functions (Node.js)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "Serverless Functions (Node.js)", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_1.md", "file_type": "document", "degree": 3}, {"id": "phase1_country_table", "label": "Country Table", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Country Table", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_state_table", "label": "State Table", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "State Table", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 3}, {"id": "phase1_district_table", "label": "District Table", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "District Table", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_subdistrict_table", "label": "SubDistrict Table", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "SubDistrict Table", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_village_table", "label": "Village Table", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 35.7, "font": {"size": 12, "color": "#ffffff"}, "title": "Village Table", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 6}, {"id": "phase1_user_table", "label": "User Table", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "User Table", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_1.md", "file_type": "document", "degree": 3}, {"id": "phase1_apikey_table", "label": "ApiKey Table", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "ApiKey Table", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_1.md", "file_type": "document", "degree": 3}, {"id": "phase1_apilog_table", "label": "ApiLog Table", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "ApiLog Table", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase1_userstateaccess", "label": "UserStateAccess Table", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "UserStateAccess Table", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 3}, {"id": "phase1_mdds_dataset", "label": "MDDS Dataset (Ministry Source)", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "MDDS Dataset (Ministry Source)", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "Phase_1.md", "file_type": "document", "degree": 1}, {"id": "phase1_data_import", "label": "Data Import Pipeline (Python)", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 27.1, "font": {"size": 12, "color": "#ffffff"}, "title": "Data Import Pipeline (Python)", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "Phase_1.md", "file_type": "document", "degree": 4}, {"id": "phase1_trigram_index", "label": "Trigram Index (Village Name Search)", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Trigram Index (Village Name Search)", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 1}, {"id": "phase1_3nf_normalization", "label": "Third Normal Form (3NF) Design", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Third Normal Form (3NF) Design", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_1.md", "file_type": "document", "degree": 2}, {"id": "phase2_api_endpoints", "label": "API Endpoints (/search, /states, /autocomplete)", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 31.4, "font": {"size": 12, "color": "#ffffff"}, "title": "API Endpoints (/search, /states, /autocomplete)", "community": 4, "community_name": "API & B2B Integration", "source_file": "Phase_2.md", "file_type": "document", "degree": 5}, {"id": "phase2_api_key_format", "label": "API Key Format (ak_/as_ prefix)", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "API Key Format (ak_/as_ prefix)", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_dropdown_response", "label": "Drop-Down Response Format", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Drop-Down Response Format", "community": 4, "community_name": "API & B2B Integration", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_error_codes", "label": "Error Codes (400/401/403/404/429/500)", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Error Codes (400/401/403/404/429/500)", "community": 4, "community_name": "API & B2B Integration", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_admin_dashboard", "label": "Admin Dashboard Analytics", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 27.1, "font": {"size": 12, "color": "#ffffff"}, "title": "Admin Dashboard Analytics", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_2.md", "file_type": "document", "degree": 4}, {"id": "phase2_user_management", "label": "User Management Features", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "User Management Features", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_2.md", "file_type": "document", "degree": 3}, {"id": "phase2_state_access_mgmt", "label": "State Access Management", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "State Access Management", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_village_browser", "label": "Village Master List (Data Browser)", "color": {"background": "#E15759", "border": "#E15759", "highlight": {"background": "#ffffff", "border": "#E15759"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Village Master List (Data Browser)", "community": 2, "community_name": "Geographical Data Schema", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_api_logs_viewer", "label": "API Logs Viewer", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "API Logs Viewer", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_b2b_portal", "label": "B2B User Portal", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 27.1, "font": {"size": 12, "color": "#ffffff"}, "title": "B2B User Portal", "community": 4, "community_name": "API & B2B Integration", "source_file": "Phase_2.md", "file_type": "document", "degree": 4}, {"id": "phase2_self_registration", "label": "Self-Registration Process", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Self-Registration Process", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_key_management", "label": "API Key Management (Create/Revoke/Rotate)", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "API Key Management (Create/Revoke/Rotate)", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_security_headers", "label": "Security Headers", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Security Headers", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_rate_limit_tiers", "label": "Rate Limiting Tiers (5K/50K/300K/1M)", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 22.9, "font": {"size": 12, "color": "#ffffff"}, "title": "Rate Limiting Tiers (5K/50K/300K/1M)", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_2.md", "file_type": "document", "degree": 3}, {"id": "phase2_usage_alerting", "label": "Usage Alerting System", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Usage Alerting System", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_vercel_deployment", "label": "Vercel Deployment Configuration", "color": {"background": "#4E79A7", "border": "#4E79A7", "highlight": {"background": "#ffffff", "border": "#4E79A7"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Vercel Deployment Configuration", "community": 0, "community_name": "Platform Infrastructure & Security", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_prisma_migrations", "label": "Prisma Migration Strategy", "color": {"background": "#76B7B2", "border": "#76B7B2", "highlight": {"background": "#ffffff", "border": "#76B7B2"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Prisma Migration Strategy", "community": 3, "community_name": "Backend & Data Pipeline", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_demo_client", "label": "Demo Client Project", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Demo Client Project", "community": 4, "community_name": "API & B2B Integration", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_swagger_docs", "label": "Swagger/OpenAPI Documentation", "color": {"background": "#59A14F", "border": "#59A14F", "highlight": {"background": "#ffffff", "border": "#59A14F"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "Swagger/OpenAPI Documentation", "community": 4, "community_name": "API & B2B Integration", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}, {"id": "phase2_react_typescript", "label": "React 18+ with TypeScript Frontend", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 27.1, "font": {"size": 12, "color": "#ffffff"}, "title": "React 18+ with TypeScript Frontend", "community": 5, "community_name": "Frontend Tech Stack", "source_file": "Phase_2.md", "file_type": "document", "degree": 4}, {"id": "phase2_tailwind_css", "label": "Tailwind CSS Styling", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Tailwind CSS Styling", "community": 5, "community_name": "Frontend Tech Stack", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_zustand", "label": "Zustand State Management", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "Zustand State Management", "community": 5, "community_name": "Frontend Tech Stack", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_react_query", "label": "React Query Data Fetching", "color": {"background": "#EDC948", "border": "#EDC948", "highlight": {"background": "#ffffff", "border": "#EDC948"}}, "size": 14.3, "font": {"size": 0, "color": "#ffffff"}, "title": "React Query Data Fetching", "community": 5, "community_name": "Frontend Tech Stack", "source_file": "Phase_2.md", "file_type": "document", "degree": 1}, {"id": "phase2_approval_workflow", "label": "User Approval Workflow", "color": {"background": "#F28E2B", "border": "#F28E2B", "highlight": {"background": "#ffffff", "border": "#F28E2B"}}, "size": 18.6, "font": {"size": 12, "color": "#ffffff"}, "title": "User Approval Workflow", "community": 1, "community_name": "User & API Key Management", "source_file": "Phase_2.md", "file_type": "document", "degree": 2}];
+const RAW_EDGES = [{"from": "project_overview_saas_platform", "to": "project_overview_rest_api", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_saas_platform", "to": "project_overview_subscription_plans", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_saas_platform", "to": "project_overview_jwt_auth", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_saas_platform", "to": "project_overview_redis_caching", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_saas_platform", "to": "project_overview_neondb", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_saas_platform", "to": "project_overview_vercel", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_saas_platform", "to": "objectives_capstone", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_rest_api", "to": "project_overview_b2b_clients", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_rest_api", "to": "project_overview_address_hierarchy", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_rest_api", "to": "phase2_api_endpoints", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_b2b_clients", "to": "phase2_b2b_portal", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_subscription_plans", "to": "phase2_rate_limit_tiers", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_address_hierarchy", "to": "phase2_dropdown_response", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_admin_panel", "to": "phase2_admin_dashboard", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_admin_panel", "to": "phase2_user_management", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "project_overview_jwt_auth", "to": "phase2_security_headers", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "project_overview_redis_caching", "to": "phase1_rate_limiting", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_redis_caching", "to": "phase1_serverless_functions", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_neondb", "to": "objectives_sql_skill", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "project_overview_neondb", "to": "phase1_nodejs_express", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_neondb", "to": "phase1_prisma_orm", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_neondb", "to": "phase1_serverless_functions", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_neondb", "to": "phase1_data_import", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "project_overview_vercel", "to": "phase2_vercel_deployment", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "objectives_skill_mastery", "to": "objectives_capstone", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "objectives_api_skill", "to": "phase1_nodejs_express", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "objectives_react_skill", "to": "phase1_react_vite", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "objectives_data_cleaning", "to": "phase1_data_import", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "phase1_prisma_orm", "to": "phase2_prisma_migrations", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_react_vite", "to": "phase1_recharts", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_react_vite", "to": "phase2_react_typescript", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_recharts", "to": "phase2_admin_dashboard", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_rate_limiting", "to": "phase2_rate_limit_tiers", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_client_layer", "to": "phase1_api_gateway", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_api_gateway", "to": "phase1_serverless_functions", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_country_table", "to": "phase1_state_table", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_country_table", "to": "phase1_3nf_normalization", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_state_table", "to": "phase1_district_table", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_state_table", "to": "phase1_userstateaccess", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_district_table", "to": "phase1_subdistrict_table", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_subdistrict_table", "to": "phase1_village_table", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_village_table", "to": "phase1_data_import", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_village_table", "to": "phase1_trigram_index", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_village_table", "to": "phase1_3nf_normalization", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_village_table", "to": "phase2_api_endpoints", "label": "references", "title": "references [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "phase1_village_table", "to": "phase2_village_browser", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_user_table", "to": "phase1_apikey_table", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_user_table", "to": "phase1_userstateaccess", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_user_table", "to": "phase2_user_management", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_apikey_table", "to": "phase1_apilog_table", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_apikey_table", "to": "phase2_api_key_format", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_apilog_table", "to": "phase2_api_logs_viewer", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_userstateaccess", "to": "phase2_state_access_mgmt", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase1_mdds_dataset", "to": "phase1_data_import", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_api_endpoints", "to": "phase2_error_codes", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_api_endpoints", "to": "phase2_demo_client", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_api_endpoints", "to": "phase2_swagger_docs", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_api_key_format", "to": "phase2_key_management", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_dropdown_response", "to": "phase2_demo_client", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_admin_dashboard", "to": "phase2_api_logs_viewer", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "phase2_admin_dashboard", "to": "phase2_village_browser", "label": "conceptually_related_to", "title": "conceptually_related_to [INFERRED]", "dashes": true, "width": 1, "color": {"opacity": 0.35}, "confidence": "INFERRED"}, {"from": "phase2_user_management", "to": "phase2_approval_workflow", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_b2b_portal", "to": "phase2_self_registration", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_b2b_portal", "to": "phase2_key_management", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_b2b_portal", "to": "phase2_swagger_docs", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_self_registration", "to": "phase2_approval_workflow", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_rate_limit_tiers", "to": "phase2_usage_alerting", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_react_typescript", "to": "phase2_tailwind_css", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_react_typescript", "to": "phase2_zustand", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}, {"from": "phase2_react_typescript", "to": "phase2_react_query", "label": "references", "title": "references [EXTRACTED]", "dashes": false, "width": 2, "color": {"opacity": 0.7}, "confidence": "EXTRACTED"}];
+const LEGEND = [{"cid": 0, "color": "#4E79A7", "label": "Platform Infrastructure &amp; Security", "count": 15}, {"cid": 1, "color": "#F28E2B", "label": "User &amp; API Key Management", "count": 11}, {"cid": 2, "color": "#E15759", "label": "Geographical Data Schema", "count": 10}, {"cid": 3, "color": "#76B7B2", "label": "Backend &amp; Data Pipeline", "count": 9}, {"cid": 4, "color": "#59A14F", "label": "API &amp; B2B Integration", "count": 9}, {"cid": 5, "color": "#EDC948", "label": "Frontend Tech Stack", "count": 7}];
+
+// HTML-escape helper — prevents XSS when injecting graph data into innerHTML
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// Build vis datasets
+const nodesDS = new vis.DataSet(RAW_NODES.map(n => ({
+  id: n.id, label: n.label, color: n.color, size: n.size,
+  font: n.font, title: n.title,
+  _community: n.community, _community_name: n.community_name,
+  _source_file: n.source_file, _file_type: n.file_type, _degree: n.degree,
+})));
+
+const edgesDS = new vis.DataSet(RAW_EDGES.map((e, i) => ({
+  id: i, from: e.from, to: e.to,
+  label: '',
+  title: e.title,
+  dashes: e.dashes,
+  width: e.width,
+  color: e.color,
+  arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+})));
+
+const container = document.getElementById('graph');
+const network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, {
+  physics: {
+    enabled: true,
+    solver: 'forceAtlas2Based',
+    forceAtlas2Based: {
+      gravitationalConstant: -60,
+      centralGravity: 0.005,
+      springLength: 120,
+      springConstant: 0.08,
+      damping: 0.4,
+      avoidOverlap: 0.8,
+    },
+    stabilization: { iterations: 200, fit: true },
+  },
+  interaction: {
+    hover: true,
+    tooltipDelay: 100,
+    hideEdgesOnDrag: true,
+    navigationButtons: false,
+    keyboard: false,
+  },
+  nodes: { shape: 'dot', borderWidth: 1.5 },
+  edges: { smooth: { type: 'continuous', roundness: 0.2 }, selectionWidth: 3 },
+});
+
+network.once('stabilizationIterationsDone', () => {
+  network.setOptions({ physics: { enabled: false } });
+});
+
+function showInfo(nodeId) {
+  const n = nodesDS.get(nodeId);
+  if (!n) return;
+  const neighborIds = network.getConnectedNodes(nodeId);
+  const neighborItems = neighborIds.map(nid => {
+    const nb = nodesDS.get(nid);
+    const color = nb ? nb.color.background : '#555';
+    return `<span class="neighbor-link" style="border-left-color:${esc(color)}" onclick="focusNode(${JSON.stringify(nid)})">${esc(nb ? nb.label : nid)}</span>`;
+  }).join('');
+  document.getElementById('info-content').innerHTML = `
+    <div class="field"><b>${esc(n.label)}</b></div>
+    <div class="field">Type: ${esc(n._file_type || 'unknown')}</div>
+    <div class="field">Community: ${esc(n._community_name)}</div>
+    <div class="field">Source: ${esc(n._source_file || '-')}</div>
+    <div class="field">Degree: ${n._degree}</div>
+    ${neighborIds.length ? `<div class="field" style="margin-top:8px;color:#aaa;font-size:11px">Neighbors (${neighborIds.length})</div><div id="neighbors-list">${neighborItems}</div>` : ''}
+  `;
+}
+
+function focusNode(nodeId) {
+  network.focus(nodeId, { scale: 1.4, animation: true });
+  network.selectNodes([nodeId]);
+  showInfo(nodeId);
+}
+
+// Track hovered node — hover detection is more reliable than click params
+let hoveredNodeId = null;
+network.on('hoverNode', params => {
+  hoveredNodeId = params.node;
+  container.style.cursor = 'pointer';
+});
+network.on('blurNode', () => {
+  hoveredNodeId = null;
+  container.style.cursor = 'default';
+});
+container.addEventListener('click', () => {
+  if (hoveredNodeId !== null) {
+    showInfo(hoveredNodeId);
+    network.selectNodes([hoveredNodeId]);
+  }
+});
+network.on('click', params => {
+  if (params.nodes.length > 0) {
+    showInfo(params.nodes[0]);
+  } else if (hoveredNodeId === null) {
+    document.getElementById('info-content').innerHTML = '<span class="empty">Click a node to inspect it</span>';
+  }
+});
+
+const searchInput = document.getElementById('search');
+const searchResults = document.getElementById('search-results');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.toLowerCase().trim();
+  searchResults.innerHTML = '';
+  if (!q) { searchResults.style.display = 'none'; return; }
+  const matches = RAW_NODES.filter(n => n.label.toLowerCase().includes(q)).slice(0, 20);
+  if (!matches.length) { searchResults.style.display = 'none'; return; }
+  searchResults.style.display = 'block';
+  matches.forEach(n => {
+    const el = document.createElement('div');
+    el.className = 'search-item';
+    el.textContent = n.label;
+    el.style.borderLeft = `3px solid ${n.color.background}`;
+    el.style.paddingLeft = '8px';
+    el.onclick = () => {
+      network.focus(n.id, { scale: 1.5, animation: true });
+      network.selectNodes([n.id]);
+      showInfo(n.id);
+      searchResults.style.display = 'none';
+      searchInput.value = '';
+    };
+    searchResults.appendChild(el);
+  });
+});
+document.addEventListener('click', e => {
+  if (!searchResults.contains(e.target) && e.target !== searchInput)
+    searchResults.style.display = 'none';
+});
+
+const hiddenCommunities = new Set();
+const legendEl = document.getElementById('legend');
+LEGEND.forEach(c => {
+  const item = document.createElement('div');
+  item.className = 'legend-item';
+  item.innerHTML = `<div class="legend-dot" style="background:${c.color}"></div>
+    <span class="legend-label">${c.label}</span>
+    <span class="legend-count">${c.count}</span>`;
+  item.onclick = () => {
+    if (hiddenCommunities.has(c.cid)) {
+      hiddenCommunities.delete(c.cid);
+      item.classList.remove('dimmed');
+    } else {
+      hiddenCommunities.add(c.cid);
+      item.classList.add('dimmed');
+    }
+    const updates = RAW_NODES
+      .filter(n => n.community === c.cid)
+      .map(n => ({ id: n.id, hidden: hiddenCommunities.has(c.cid) }));
+    nodesDS.update(updates);
+  };
+  legendEl.appendChild(item);
+});
+</script>
+<script>
+// Render hyperedges as shaded regions
+const hyperedges = [{"id": "geo_hierarchy_chain", "label": "Geographical Data Hierarchy", "nodes": ["phase1_country_table", "phase1_state_table", "phase1_district_table", "phase1_subdistrict_table", "phase1_village_table"], "relation": "form", "confidence": "EXTRACTED", "confidence_score": 1.0, "source_file": "Phase_1.md"}, {"id": "auth_security_flow", "label": "Authentication & Security Pipeline", "nodes": ["project_overview_jwt_auth", "phase2_api_key_format", "phase2_security_headers", "phase1_rate_limiting", "phase2_rate_limit_tiers"], "relation": "participate_in", "confidence": "EXTRACTED", "confidence_score": 0.9, "source_file": "Phase_2.md"}, {"id": "admin_tools_suite", "label": "Admin Management Suite", "nodes": ["phase2_admin_dashboard", "phase2_user_management", "phase2_state_access_mgmt", "phase2_village_browser", "phase2_api_logs_viewer"], "relation": "form", "confidence": "EXTRACTED", "confidence_score": 0.85, "source_file": "Phase_2.md"}];
+function drawHyperedges() {
+    const canvas = network.canvas.frame.canvas;
+    const ctx = canvas.getContext('2d');
+    hyperedges.forEach(h => {
+        const positions = h.nodes
+            .map(nid => network.getPositions([nid])[nid])
+            .filter(p => p !== undefined);
+        if (positions.length < 2) return;
+        // Draw convex hull as filled polygon
+        ctx.save();
+        ctx.globalAlpha = 0.12;
+        ctx.fillStyle = '#6366f1';
+        ctx.strokeStyle = '#6366f1';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const scale = network.getScale();
+        const offset = network.getViewPosition();
+        const toCanvas = (p) => ({
+            x: (p.x - offset.x) * scale + canvas.width / 2,
+            y: (p.y - offset.y) * scale + canvas.height / 2
+        });
+        const pts = positions.map(toCanvas);
+        // Expand hull slightly
+        const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+        const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+        const expanded = pts.map(p => ({
+            x: cx + (p.x - cx) * 1.15,
+            y: cy + (p.y - cy) * 1.15
+        }));
+        ctx.moveTo(expanded[0].x, expanded[0].y);
+        expanded.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+        ctx.closePath();
+        ctx.fill();
+        ctx.globalAlpha = 0.4;
+        ctx.stroke();
+        // Label
+        ctx.globalAlpha = 0.8;
+        ctx.fillStyle = '#4f46e5';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(h.label, cx, cy - 5);
+        ctx.restore();
+    });
+}
+network.on('afterDrawing', drawHyperedges);
+</script>
+</body>
+</html>
