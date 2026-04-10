@@ -87,13 +87,13 @@ def read_excel_file(filepath):
             col_mapping[col] = 'state_name'
         elif 'dtc' in col_lower or col_lower == 'mdds_dtc':
             col_mapping[col] = 'district_code'
-        elif 'district' in col_lower and 'name' in col_lower:
-            col_mapping[col] = 'district_name'
-        elif 'sub_dt' in col_lower or 'sub_district' in col_lower:
+        elif 'sub_dt' in col_lower or 'sub_dist' in col_lower or 'subdistrict' in col_lower:
             if 'name' in col_lower:
                 col_mapping[col] = 'subdistrict_name'
             else:
                 col_mapping[col] = 'subdistrict_code'
+        elif 'district' in col_lower and 'name' in col_lower:
+            col_mapping[col] = 'district_name'
         elif 'plcn' in col_lower or col_lower == 'mdds_plcn':
             col_mapping[col] = 'village_code'
         elif 'area' in col_lower and 'name' in col_lower:
@@ -182,7 +182,7 @@ def batch_insert_villages(cursor, villages, batch_size=5000):
             INSERT INTO villages (code, name, "subDistrictId", "createdAt", "updatedAt")
             VALUES %s
             ON CONFLICT (code, "subDistrictId") DO UPDATE SET name = EXCLUDED.name, "updatedAt" = NOW()
-        """, [(v['code'], v['name'], v['subdistrict_id'], 'NOW()', 'NOW()') for v in batch],
+        """, [(v['code'], v['name'], v['subdistrict_id']) for v in batch],
         template="(%s, %s, %s, NOW(), NOW())")
         
         inserted += len(batch)

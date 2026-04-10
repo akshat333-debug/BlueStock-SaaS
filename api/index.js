@@ -8,6 +8,7 @@ const rateLimit = require('express-rate-limit');
 const healthRoutes = require('./routes/health');
 const geographyRoutes = require('./routes/v1/geography');
 const searchRoutes = require('./routes/v1/search');
+const keyRoutes = require('./routes/keys');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -75,6 +76,7 @@ app.use('/api', healthRoutes);
 // V1 API Endpoints
 app.use('/api/v1', geographyRoutes);
 app.use('/api/v1', searchRoutes);
+app.use('/api/v1/keys', keyRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
