@@ -38,3 +38,6 @@ obsidian-vault/.obsidian/
 # Logs
 *.log
 npm-debug.log*
+
+# Dataset files
+dataset/
