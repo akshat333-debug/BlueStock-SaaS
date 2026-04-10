@@ -26,9 +26,9 @@ export default function Analytics() {
 
   const statCards = [
     { name: 'Total Villages', stat: data.totalVillages.toLocaleString(), icon: MapPin, change: `${data.villageGrowth}%`, changeType: 'increase' },
-    { name: 'Active API Users', stat: data.activeUsers, icon: Users, change: `${data.userGrowth}%`, changeType: 'increase' },
-    { name: 'API Requests (24h)', stat: data.todayRequests.toLocaleString(), icon: Activity, change: `${data.requestsGrowth}%`, changeType: 'increase' },
-    { name: 'Avg Response Time', stat: `${data.avgResponseTime}ms`, icon: Clock, change: 'healthy SLA', changeType: 'neutral' },
+    { name: 'Active Users', stat: data.activeUsers, icon: Users, change: `${data.userGrowth}%`, changeType: 'increase' },
+    { name: 'Requests (24h)', stat: data.todayRequests.toLocaleString(), icon: Activity, change: `${data.requestsGrowth}%`, changeType: 'increase' },
+    { name: 'Avg Latency', stat: `${data.avgResponseTime}ms`, icon: Clock, change: 'healthy', changeType: 'neutral' },
   ];
 
   return (
@@ -48,11 +48,11 @@ export default function Analytics() {
                 <div className="flex-shrink-0 bg-blue-100/50 rounded-xl p-3">
                   <item.icon className="h-6 w-6 text-blue-600" aria-hidden="true" />
                 </div>
-                <div className="ml-4 w-0 flex-1">
+                <div className="ml-4 min-w-0 flex-1">
                   <dl>
-                    <dt className="text-sm font-medium text-slate-500 truncate">{item.name}</dt>
-                    <dd className="flex items-baseline">
-                      <div className="text-2xl font-bold text-slate-900">{item.stat}</div>
+                    <dt className="text-xs font-medium text-slate-500 whitespace-nowrap">{item.name}</dt>
+                    <dd className="flex items-baseline flex-wrap">
+                      <div className="text-xl font-bold text-slate-900">{item.stat}</div>
                       <div className="ml-2 flex items-baseline text-sm font-semibold text-emerald-600">
                         {item.changeType === 'increase' && <ArrowUpRight className="self-center flex-shrink-0 h-4 w-4 text-emerald-500" aria-hidden="true" />}
                         <span className="ml-1">{item.change}</span>
