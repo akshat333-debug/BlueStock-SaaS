@@ -2,7 +2,7 @@
 
 > A production-grade DaaS (Data-as-a-Service) platform providing a RESTful API for topological and geographical data of all 570,000+ villages across India.
 
-![Admin UI](https://github.com/akshat333-debug/BlueStock-SaaS/assets/admin_dashboard.png) *(Preview of Admin Analytics)*
+![Admin UI](./assets/admin_dashboard.png) *(Preview of Admin Analytics)*
 
 ## Overview
 Bluestock SaaS allows developer clients (B2B) to integrate verified Government of India (MDDS) topological hierarchy data directly into their applications. The API allows cascading lookups from States -> Districts -> Sub-Districts -> Villages natively.
