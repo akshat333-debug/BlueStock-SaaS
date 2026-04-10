@@ -5,9 +5,9 @@ import DashboardLayout from '../components/layout/DashboardLayout';
 import { Map, PackageSearch } from 'lucide-react';
 
 export default function DataBrowser() {
-  const [stateCode, setStateCode] = useState('');
-  const [districtCode, setDistrictCode] = useState('');
-  const [subDistrictCode, setSubDistrictCode] = useState('');
+  const [stateId, setStateId] = useState('');
+  const [districtId, setDistrictId] = useState('');
+  const [subDistrictId, setSubDistrictId] = useState('');
 
   const { data: statesRes } = useQuery({
      queryKey: ['browser', 'states'],
@@ -15,21 +15,21 @@ export default function DataBrowser() {
   });
 
   const { data: districtsRes } = useQuery({
-     queryKey: ['browser', 'districts', stateCode],
-     queryFn: () => getHierarchyData('districts', stateCode),
-     enabled: !!stateCode,
+     queryKey: ['browser', 'districts', stateId],
+     queryFn: () => getHierarchyData('districts', stateId),
+     enabled: !!stateId,
   });
 
   const { data: subDistrictsRes } = useQuery({
-     queryKey: ['browser', 'subdistricts', districtCode],
-     queryFn: () => getHierarchyData('subdistricts', districtCode),
-     enabled: !!districtCode,
+     queryKey: ['browser', 'subdistricts', districtId],
+     queryFn: () => getHierarchyData('subdistricts', districtId),
+     enabled: !!districtId,
   });
 
   const { data: villagesRes, isLoading: loadingVillages } = useQuery({
-     queryKey: ['browser', 'villages', subDistrictCode],
-     queryFn: () => getHierarchyData('villages', subDistrictCode),
-     enabled: !!subDistrictCode,
+     queryKey: ['browser', 'villages', subDistrictId],
+     queryFn: () => getHierarchyData('villages', subDistrictId),
+     enabled: !!subDistrictId,
   });
 
   return (
@@ -48,11 +48,11 @@ export default function DataBrowser() {
                <label className="block text-sm font-medium leading-6 text-slate-900 mb-2">State</label>
                <select 
                   className="mt-2 block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 cursor-pointer bg-slate-50"
-                  value={stateCode}
-                  onChange={(e) => { setStateCode(e.target.value); setDistrictCode(''); setSubDistrictCode(''); }}
+                  value={stateId}
+                  onChange={(e) => { setStateId(e.target.value); setDistrictId(''); setSubDistrictId(''); }}
                >
                   <option value="">Select State...</option>
-                  {statesRes?.data?.map((s) => <option key={s.id} value={s.code}>{s.name} ({s.code})</option>)}
+                  {statesRes?.data?.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
                </select>
             </div>
             
@@ -60,12 +60,12 @@ export default function DataBrowser() {
                <label className="block text-sm font-medium leading-6 text-slate-900 mb-2">District</label>
                <select 
                   className="mt-2 block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 cursor-pointer bg-slate-50 disabled:opacity-50"
-                  disabled={!stateCode}
-                  value={districtCode}
-                  onChange={(e) => { setDistrictCode(e.target.value); setSubDistrictCode(''); }}
+                  disabled={!stateId}
+                  value={districtId}
+                  onChange={(e) => { setDistrictId(e.target.value); setSubDistrictId(''); }}
                >
                   <option value="">Select District...</option>
-                  {districtsRes?.data?.map((d) => <option key={d.id} value={d.code}>{d.name} ({d.code})</option>)}
+                  {districtsRes?.data?.map((d: any) => <option key={d.id} value={d.id}>{d.name} ({d.code})</option>)}
                </select>
             </div>
 
@@ -73,19 +73,19 @@ export default function DataBrowser() {
                <label className="block text-sm font-medium leading-6 text-slate-900 mb-2">Sub-District</label>
                <select 
                   className="mt-2 block w-full rounded-md border-0 py-2.5 pl-3 pr-10 text-slate-900 ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-blue-600 sm:text-sm sm:leading-6 cursor-pointer bg-slate-50 disabled:opacity-50"
-                  disabled={!districtCode}
-                  value={subDistrictCode}
-                  onChange={(e) => setSubDistrictCode(e.target.value)}
+                  disabled={!districtId}
+                  value={subDistrictId}
+                  onChange={(e) => setSubDistrictId(e.target.value)}
                >
                   <option value="">Select Sub-District...</option>
-                  {subDistrictsRes?.data?.map((sd) => <option key={sd.id} value={sd.code}>{sd.name} ({sd.code})</option>)}
+                  {subDistrictsRes?.data?.map((sd: any) => <option key={sd.id} value={sd.id}>{sd.name} ({sd.code})</option>)}
                </select>
             </div>
          </div>
       </div>
 
       {/* Results View */}
-      {subDistrictCode ? (
+      {subDistrictId ? (
          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
              {loadingVillages ? (
                 <div className="p-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
@@ -101,11 +101,11 @@ export default function DataBrowser() {
                          </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200 bg-white">
-                         {villagesRes?.data?.map((v) => (
+                         {villagesRes?.data?.map((v: any) => (
                            <tr key={v.id} className="hover:bg-slate-50">
                               <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900 font-mono">{v.code}</td>
                               <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{v.name}</td>
-                              <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{(v as any).subDistrict.name}</td>
+                              <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{v.subDistrict?.name || '—'}</td>
                               <td className="whitespace-nowrap px-6 py-4 text-sm text-right">
                                  <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Synced</span>
                               </td>

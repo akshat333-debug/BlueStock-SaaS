@@ -15,22 +15,42 @@ function generateApiKeyPair() {
     const secret = `as_${crypto.randomBytes(16).toString('hex')}`;
     
     // Hash the secret for storage
-    const hashedSecret = crypto.createHash('sha256').update(secret).digest('hex');
+    const secretHash = crypto.createHash('sha256').update(secret).digest('hex');
     
-    return { key, secret, hashedSecret };
+    return { key, secret, secretHash };
+}
+
+/**
+ * Ensure a demo user exists in the DB (auto-seed for first run).
+ * Uses the actual Prisma User schema fields.
+ */
+async function ensureDemoUser() {
+    let user = await prisma.user.findFirst();
+    if (!user) {
+        user = await prisma.user.create({
+            data: {
+                email: 'demo@villageapi.com',
+                passwordHash: crypto.createHash('sha256').update('demo123').digest('hex'),
+                businessName: 'Demo Corp',
+                planType: 'PRO',
+                status: 'ACTIVE',
+                role: 'ADMIN'
+            }
+        });
+    }
+    return user;
 }
 
 /**
  * @route GET /api/v1/keys
  * @desc List all API keys for the current authenticated user/org.
- * NOTE: For the hackathon demo, we are skipping a real UI Login and passing hardcoded userId=1.
  */
 router.get('/', async (req, res) => {
     try {
-        const userId = 1; // MOCKED DEMO USER ID
+        const user = await ensureDemoUser();
         
         const keys = await prisma.apiKey.findMany({
-            where: { userId },
+            where: { userId: user.id },
             select: {
                 id: true,
                 name: true,
@@ -42,14 +62,13 @@ router.get('/', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        // Format dates for UI natively
         const formatted = keys.map(k => ({
             id: k.id,
             name: k.name,
             key: k.key,
             isActive: k.isActive,
             createdAt: k.createdAt.toISOString().split('T')[0],
-            lastUsedAt: 'Never' // Simplified for demo
+            lastUsedAt: 'Never'
         }));
 
         sendSuccess(res, formatted);
@@ -65,21 +84,21 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
     try {
-        const userId = 1; // MOCKED DEMO USER ID
+        const user = await ensureDemoUser();
         const { name } = req.body;
 
         if (!name || name.trim() === '') {
             return sendError(res, 400, 'Key name is required', 'VALIDATION_ERROR');
         }
 
-        const { key, secret, hashedSecret } = generateApiKeyPair();
+        const { key, secret, secretHash } = generateApiKeyPair();
 
         const newKey = await prisma.apiKey.create({
             data: {
-                userId,
+                userId: user.id,
                 name: name.trim(),
                 key,
-                hashedSecret
+                secretHash
             }
         });
 

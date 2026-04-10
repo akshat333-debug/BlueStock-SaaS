@@ -74,9 +74,9 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/api', healthRoutes);
 
 // V1 API Endpoints
+app.use('/api/v1/keys', keyRoutes);
 app.use('/api/v1', geographyRoutes);
 app.use('/api/v1', searchRoutes);
-app.use('/api/v1/keys', keyRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

@@ -178,11 +178,20 @@ def batch_insert_villages(cursor, villages, batch_size=5000):
     for i in range(0, len(villages), batch_size):
         batch = villages[i:i + batch_size]
         
+        # Deduplicate within batch by subDistrictId and code
+        seen = set()
+        deduped = []
+        for v in batch:
+            k = (v['subdistrict_id'], v['code'])
+            if k not in seen:
+                seen.add(k)
+                deduped.append(v)
+        
         execute_values(cursor, """
             INSERT INTO villages (code, name, "subDistrictId", "createdAt", "updatedAt")
             VALUES %s
             ON CONFLICT (code, "subDistrictId") DO UPDATE SET name = EXCLUDED.name, "updatedAt" = NOW()
-        """, [(v['code'], v['name'], v['subdistrict_id']) for v in batch],
+        """, [(v['code'], v['name'], v['subdistrict_id']) for v in deduped],
         template="(%s, %s, %s, NOW(), NOW())")
         
         inserted += len(batch)
