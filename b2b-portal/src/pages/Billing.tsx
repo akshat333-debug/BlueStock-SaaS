@@ -60,6 +60,7 @@ export default function Billing() {
 
                   <button 
                      disabled={tier.current}
+                     onClick={() => alert(`Upgrading to ${tier.name} tier. Please contact enterprise@bluestock.in for invoicing validation.`)}
                      className={clsx(
                         "w-full py-2.5 rounded-lg text-sm font-bold transition-all",
                         tier.current ? "bg-surface-800 text-slate-500 cursor-not-allowed" : 

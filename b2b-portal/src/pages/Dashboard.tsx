@@ -6,12 +6,15 @@ import PortalLayout from '../components/layout/PortalLayout';
 import { Activity, CheckCircle2 } from 'lucide-react';
 import clsx from 'clsx';
 
+import { useNavigate } from 'react-router-dom';
+
 // We mock the user context for the UI purposes right now
 const DUMMY_USER: UserContext = {
    id: 1, email: 'admin@startup.com', businessName: 'Startup Solutions', planType: 'PREMIUM', status: 'ACTIVE'
 };
 
 export default function Dashboard() {
+   const navigate = useNavigate();
    const { data: qData, isLoading } = useQuery({
       queryKey: ['quota'],
       queryFn: getQuotaData
@@ -81,7 +84,10 @@ export default function Dashboard() {
                </div>
                <div>
                   <p className="text-sm text-slate-400 mb-4">Need higher limits or dedicated support?</p>
-                  <button className="w-full py-2 bg-white text-surface-950 hover:bg-slate-200 transition-colors rounded-lg text-sm font-bold">
+                  <button 
+                     onClick={() => navigate('/billing')}
+                     className="w-full py-2 bg-white text-surface-950 hover:bg-slate-200 transition-colors rounded-lg text-sm font-bold"
+                  >
                      Upgrade Plan
                   </button>
                </div>

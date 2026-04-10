@@ -20,7 +20,11 @@ export default function Users() {
           <p className="mt-1 text-sm text-slate-500">Manage B2B API clients, subscriptions, and access.</p>
         </div>
         <div className="mt-4 sm:mt-0">
-          <button type="button" className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors">
+          <button 
+             type="button" 
+             onClick={() => alert('Invite functionality scheduled for v2.0 update.')}
+             className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 transition-colors"
+          >
             Invite User
           </button>
         </div>
@@ -39,7 +43,10 @@ export default function Users() {
               placeholder="Search by email, business, or API key..."
             />
           </div>
-          <button className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 transition-colors">
+          <button 
+             onClick={() => alert('Advanced filtering options coming soon!')}
+             className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg shadow-sm hover:bg-slate-50 transition-colors"
+          >
             <Filter className="h-4 w-4" /> Filters
           </button>
         </div>
@@ -103,7 +110,10 @@ export default function Users() {
                       {user.requests.toLocaleString()}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                      <button className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                         onClick={(e) => { e.stopPropagation(); alert('User administration actions are restricted to Super Admins.'); }}
+                         className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
                          <MoreVertical className="h-5 w-5" />
                       </button>
                     </td>

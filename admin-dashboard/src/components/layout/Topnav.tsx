@@ -16,12 +16,18 @@ export default function Topnav() {
           </div>
         </div>
         <div className="ml-4 flex items-center md:ml-6 gap-4">
-          <button className="p-1 rounded-full text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <button 
+             onClick={() => alert('No new notifications')}
+             className="p-1 rounded-full text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
             <span className="sr-only">View notifications</span>
             <Bell className="h-6 w-6" aria-hidden="true" />
           </button>
 
-          <div className="relative rounded-full bg-slate-100 p-1 flex items-center gap-2 pr-3 cursor-pointer hover:bg-slate-200 transition-colors">
+          <div 
+             onClick={() => alert('Admin configuration overlay coming soon.')}
+             className="relative rounded-full bg-slate-100 p-1 flex items-center gap-2 pr-3 cursor-pointer hover:bg-slate-200 transition-colors"
+          >
             <UserCircle className="h-8 w-8 text-blue-600" />
             <span className="text-sm font-semibold text-slate-700">Admin</span>
           </div>

@@ -38,7 +38,14 @@ export default function Sidebar() {
       </div>
 
       <div className="p-4 border-t border-surface-800">
-         <button className="flex items-center w-full px-3 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-lg hover:bg-surface-800/50 transition-colors">
+         <button 
+            onClick={() => {
+               if(window.confirm('Are you sure you want to sign out?')) {
+                  window.location.href = '/login';
+               }
+            }}
+            className="flex items-center w-full px-3 py-2 text-sm font-medium text-slate-400 hover:text-white rounded-lg hover:bg-surface-800/50 transition-colors"
+         >
             <LogOut className="w-5 h-5 mr-3" />
             Sign Out
          </button>
