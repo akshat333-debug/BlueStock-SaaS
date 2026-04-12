@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Activity, Key, CreditCard, LogOut, TerminalSquare } from 'lucide-react';
+import { Activity, Key, CreditCard, LogOut, TerminalSquare, BookOpen } from 'lucide-react';
 import clsx from 'clsx';
 
 const navItems = [
@@ -35,6 +35,17 @@ export default function Sidebar() {
              </Link>
            );
          })}
+
+         <a
+           href="/api-docs"
+           target="_blank"
+           rel="noopener noreferrer"
+           className="flex items-center px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-surface-800/50 transition-all duration-200"
+         >
+           <BookOpen className="w-5 h-5 mr-3 flex-shrink-0" />
+           API Docs
+           <span className="ml-auto text-xs text-slate-600">↗</span>
+         </a>
       </div>
 
       <div className="p-4 border-t border-surface-800">

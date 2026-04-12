@@ -4,6 +4,7 @@ import Analytics from './pages/Analytics';
 import Users from './pages/Users';
 import DataBrowser from './pages/DataBrowser';
 import ApiLogs from './pages/ApiLogs';
+import UserDetail from './pages/UserDetail';
 
 // Create a client
 const queryClient = new QueryClient();
@@ -17,6 +18,7 @@ function App() {
           <Route path="/users" element={<Users />} />
           <Route path="/data-browser" element={<DataBrowser />} />
           <Route path="/api-logs" element={<ApiLogs />} />
+          <Route path="/users/:id" element={<UserDetail />} />
           <Route path="*" element={<div className="p-12 text-center text-slate-500">Not Found</div>} />
         </Routes>
       </Router>

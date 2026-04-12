@@ -8,6 +8,8 @@ export default function DataBrowser() {
   const [stateId, setStateId] = useState('');
   const [districtId, setDistrictId] = useState('');
   const [subDistrictId, setSubDistrictId] = useState('');
+  const [pageSize, setPageSize] = useState(500);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const { data: statesRes } = useQuery({
      queryKey: ['browser', 'states'],
@@ -113,6 +115,25 @@ export default function DataBrowser() {
                          ))}
                       </tbody>
                    </table>
+                </div>
+
+                {/* Pagination & Page Size */}
+                <div className="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
+                   <div className="flex items-center gap-2 text-sm text-slate-600">
+                     <span>Showing {villagesRes?.data?.length || 0} records</span>
+                     <span className="text-slate-300">|</span>
+                     <span>Page size:</span>
+                     <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="text-sm border border-slate-300 rounded px-2 py-1">
+                       <option value={500}>500</option>
+                       <option value={5000}>5,000</option>
+                       <option value={10000}>10,000</option>
+                     </select>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1} className="px-3 py-1 text-sm border border-slate-300 rounded disabled:opacity-50">Previous</button>
+                     <span className="text-sm text-slate-600">Page {currentPage}</span>
+                     <button onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 text-sm border border-slate-300 rounded">Next</button>
+                   </div>
                 </div>
              )}
          </div>

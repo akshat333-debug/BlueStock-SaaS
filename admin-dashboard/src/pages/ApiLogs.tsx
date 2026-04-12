@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { getApiLogs } from '../services/api';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { Search, Download, Filter, FileJson } from 'lucide-react';
+import { Search, Download, FileJson, ChevronRight } from 'lucide-react';
 
 export default function ApiLogs() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateRange, setDateRange] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const { data: response, isLoading } = useQuery({
     queryKey: ['apilogs'],
@@ -14,10 +18,25 @@ export default function ApiLogs() {
 
   const logs = response?.data || [];
 
-  const filteredLogs = logs.filter((log: any) =>
-    log.endpoint.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    log.user.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredLogs = useMemo(() => {
+    let list = logs.filter((log: any) =>
+      log.endpoint.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      log.user.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    // Date range filter
+    if (dateRange !== 'all') {
+      const now = Date.now();
+      const msMap: Record<string, number> = { '1h': 3600000, '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
+      const cutoff = now - (msMap[dateRange] || 0);
+      list = list.filter((log: any) => new Date(log.timestamp).getTime() > cutoff);
+    }
+    // Status code filter
+    if (statusFilter !== 'all') {
+      const prefix = parseInt(statusFilter);
+      list = list.filter((log: any) => Math.floor(log.statusCode / 100) === prefix / 100);
+    }
+    return list;
+  }, [logs, searchTerm, dateRange, statusFilter]);
 
   const downloadCSV = () => {
     if (filteredLogs.length === 0) return;
@@ -44,6 +63,13 @@ export default function ApiLogs() {
 
   return (
     <DashboardLayout>
+      {/* Breadcrumb */}
+      <nav className="flex items-center text-sm text-slate-400 mb-4">
+        <span className="hover:text-blue-600 cursor-pointer" onClick={() => navigate('/')}>Dashboard</span>
+        <ChevronRight className="w-3 h-3 mx-2" />
+        <span className="text-slate-700 font-medium">API Logs</span>
+      </nav>
+
       <div className="sm:flex sm:items-center sm:justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">API Logs Viewer</h1>
@@ -73,9 +99,21 @@ export default function ApiLogs() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <button className="inline-flex items-center px-4 py-2 border border-slate-300 rounded-lg text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
-            <Filter className="w-4 h-4 mr-2" /> Advanced Filters
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <select value={dateRange} onChange={e => setDateRange(e.target.value)} className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-700">
+              <option value="all">All Time</option>
+              <option value="1h">Last Hour</option>
+              <option value="24h">Last 24 Hours</option>
+              <option value="7d">Last 7 Days</option>
+              <option value="30d">Last 30 Days</option>
+            </select>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-700">
+              <option value="all">All Status</option>
+              <option value="200">2xx Success</option>
+              <option value="400">4xx Client Error</option>
+              <option value="500">5xx Server Error</option>
+            </select>
+          </div>
         </div>
 
         <div className="overflow-x-auto">

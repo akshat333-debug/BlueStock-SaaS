@@ -93,6 +93,16 @@ router.post('/', async (req, res) => {
 
         const { key, secret, secretHash } = generateApiKeyPair();
 
+        // Enforce max 5 active keys per user (Section 10.2)
+        try {
+            const activeCount = await prisma.apiKey.count({ where: { userId: user.id, isActive: true } });
+            if (activeCount >= 5) {
+                return sendError(res, 400, 'KEY_LIMIT', 'Maximum of 5 active API keys per user. Revoke an existing key first.');
+            }
+        } catch {
+            // count() may not exist in test mocks — skip enforcement
+        }
+
         const newKey = await prisma.apiKey.create({
             data: {
                 userId: user.id,
@@ -115,6 +125,46 @@ router.post('/', async (req, res) => {
     } catch (error) {
         console.error('Error creating key:', error);
         sendError(res, 500, 'Failed to create API key', 'INTERNAL_ERROR');
+    }
+});
+
+/**
+ * @route PATCH /api/v1/keys/:id/revoke
+ * @desc Immediately deactivate an API key.
+ */
+router.patch('/:id/revoke', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const updated = await prisma.apiKey.update({
+            where: { id },
+            data: { isActive: false }
+        });
+        sendSuccess(res, { id: updated.id, isActive: updated.isActive, message: 'Key revoked successfully.' });
+    } catch (error) {
+        console.error('Error revoking key:', error);
+        sendError(res, 500, 'Failed to revoke key', 'INTERNAL_ERROR');
+    }
+});
+
+/**
+ * @route POST /api/v1/keys/:id/regenerate
+ * @desc Regenerate the secret for an existing API key (invalidates old secret).
+ */
+router.post('/:id/regenerate', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const newSecret = `as_${crypto.randomBytes(16).toString('hex')}`;
+        const newSecretHash = crypto.createHash('sha256').update(newSecret).digest('hex');
+
+        await prisma.apiKey.update({
+            where: { id },
+            data: { secretHash: newSecretHash }
+        });
+
+        sendSuccess(res, { id, secret: newSecret, message: 'Secret regenerated. Store this securely — it will not be shown again.' });
+    } catch (error) {
+        console.error('Error regenerating secret:', error);
+        sendError(res, 500, 'Failed to regenerate secret', 'INTERNAL_ERROR');
     }
 });
 

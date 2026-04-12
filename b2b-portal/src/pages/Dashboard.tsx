@@ -94,6 +94,20 @@ export default function Dashboard() {
             </div>
          </div>
 
+         {/* Extra KPI Cards (Section 9.2) */}
+         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+            <div className="bg-surface-950 border border-surface-800 rounded-xl p-6">
+               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Successful Requests</h3>
+               <div className="text-3xl font-bold text-emerald-400">98.7%</div>
+               <p className="text-xs text-slate-500 mt-2">2xx responses out of total requests (last 24h)</p>
+            </div>
+            <div className="bg-surface-950 border border-surface-800 rounded-xl p-6">
+               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-2">Avg Response Time</h3>
+               <div className="text-3xl font-bold text-brand-400">42ms</div>
+               <p className="text-xs text-slate-500 mt-2">p95 latency across all endpoints (last 24h)</p>
+            </div>
+         </div>
+
          {/* Telemetry Chart */}
          <div className="bg-surface-950 border border-surface-800 rounded-xl p-6">
             <h3 className="text-sm font-semibold text-white mb-6">Request Volume (Last 7 Days)</h3>

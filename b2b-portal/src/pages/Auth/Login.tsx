@@ -69,9 +69,9 @@ export default function Login() {
 
           <p className="mt-8 text-center text-sm text-slate-400">
             Not a client yet?{' '}
-            <a href="#" className="font-semibold leading-6 text-brand-400 hover:text-brand-300 transition-colors">
+            <Link to="/register" className="font-semibold leading-6 text-brand-400 hover:text-brand-300 transition-colors">
               Request API Access
-            </a>
+            </Link>
           </p>
         </div>
       </div>

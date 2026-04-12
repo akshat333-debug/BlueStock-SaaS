@@ -9,6 +9,9 @@ const healthRoutes = require('./routes/health');
 const geographyRoutes = require('./routes/v1/geography');
 const searchRoutes = require('./routes/v1/search');
 const keyRoutes = require('./routes/keys');
+const authRoutes = require('./routes/auth');
+const requestIdMiddleware = require('./middleware/requestId');
+const apiLogger = require('./middleware/apiLogger');
 
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
@@ -44,6 +47,12 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Request ID generation
+app.use(requestIdMiddleware);
+
+// API request logging (writes to ApiLog table)
+app.use(apiLogger);
+
 // Global rate limiter (fallback — per-key limits applied in API routes)
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 minutes
@@ -57,6 +66,16 @@ const globalLimiter = rateLimit({
   },
 });
 app.use(globalLimiter);
+
+// Per-minute burst limiter (Section 10.4)
+const burstLimiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max: 100,              // Free tier: 100 req/min (scales by plan via per-key middleware)
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: 'RATE_LIMITED', message: 'Burst limit exceeded. Please slow down.' },
+});
+app.use('/api/v1', burstLimiter);
 
 // Request logging (dev only)
 if (process.env.NODE_ENV !== 'production') {
@@ -80,6 +99,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Health & stats
 app.use('/api', healthRoutes);
+
+// Auth Endpoints
+app.use('/api/auth', authRoutes);
 
 // V1 API Endpoints
 app.use('/api/v1/keys', keyRoutes);

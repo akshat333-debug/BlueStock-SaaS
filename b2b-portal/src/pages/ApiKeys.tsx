@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getApiKeys, createApiKey } from '../services/api';
 import PortalLayout from '../components/layout/PortalLayout';
-import { Key, Copy, Check, Plus, AlertTriangle } from 'lucide-react';
+import { Key, Copy, Check, Plus, AlertTriangle, Trash2, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 
 export default function ApiKeys() {
@@ -102,6 +102,7 @@ export default function ApiKeys() {
                            <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Created</th>
                            <th scope="col" className="px-6 py-4 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">Last Used</th>
                            <th scope="col" className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Status</th>
+                           <th scope="col" className="px-6 py-4 text-right text-xs font-medium text-slate-400 uppercase tracking-wider">Actions</th>
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-surface-800 bg-surface-950">
@@ -124,6 +125,20 @@ export default function ApiKeys() {
                                  <span className={clsx("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border", k.isActive ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-slate-800 text-slate-400 border-slate-700')}>
                                     {k.isActive ? 'Active' : 'Disabled'}
                                  </span>
+                              </td>
+                              <td className="whitespace-nowrap px-6 py-4 text-right">
+                                 <div className="flex justify-end gap-2">
+                                    {k.isActive && (
+                                       <>
+                                          <button onClick={() => { if(confirm('Regenerate secret? The old one will be invalidated.')) { fetch(`/api/v1/keys/${k.id}/regenerate`, {method:'POST'}).then(r=>r.json()).then(d=>{if(d.success) alert('New secret: ' + d.data.secret); queryClient.invalidateQueries({queryKey:['keys']}); }) } }} className="text-xs text-brand-400 hover:text-brand-300 bg-brand-500/10 px-2 py-1 rounded border border-brand-500/20" title="Regenerate Secret">
+                                             <RefreshCw className="w-3 h-3" />
+                                          </button>
+                                          <button onClick={() => { if(confirm('Revoke this key? It will be deactivated immediately.')) { fetch(`/api/v1/keys/${k.id}/revoke`, {method:'PATCH'}).then(()=> queryClient.invalidateQueries({queryKey:['keys']})) } }} className="text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20" title="Revoke Key">
+                                             <Trash2 className="w-3 h-3" />
+                                          </button>
+                                       </>
+                                    )}
+                                 </div>
                               </td>
                            </tr>
                         ))}
