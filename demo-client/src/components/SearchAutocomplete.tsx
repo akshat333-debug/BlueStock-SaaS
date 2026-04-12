@@ -2,9 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../api/config';
 import { Search, Loader2 } from 'lucide-react';
 
-interface SearchResult { value: string; label: string; }
+export interface SearchResult { 
+  value: string; 
+  label: string; 
+  fullAddress: string; 
+  hierarchy: { village: string; subDistrict: string; district: string; state: string; country: string; }; 
+}
 
-export default function SearchAutocomplete() {
+interface SearchProps {
+  onSelect?: (r: SearchResult) => void;
+}
+
+export default function SearchAutocomplete({ onSelect }: SearchProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +55,9 @@ export default function SearchAutocomplete() {
   const handleSelect = (r: SearchResult) => {
      setQuery(r.label);
      setIsOpen(false);
-     alert("You selected code: " + r.value);
+     if (onSelect) {
+       onSelect(r);
+     }
   }
 
   return (
@@ -89,8 +100,8 @@ export default function SearchAutocomplete() {
                 onClick={() => handleSelect(r)}
               >
                 <div className="flex flex-col">
-                   <span className="font-medium">{r.label.split(',')[0]}</span>
-                   <span className="text-xs text-slate-500 truncate mt-0.5">{r.label}</span>
+                   <span className="font-medium">{r.label}</span>
+                   <span className="text-xs text-slate-500 truncate mt-0.5">{r.fullAddress}</span>
                 </div>
               </li>
             ))}

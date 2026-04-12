@@ -12,6 +12,9 @@ export default function ApiKeys() {
    const [newKeyName, setNewKeyName] = useState('');
    const [revealedSecret, setRevealedSecret] = useState<string | null>(null);
 
+   // Mocking the PENDING_APPROVAL status from the mocked DB logic
+   const isPendingApproval = localStorage.getItem('user_status') === 'PENDING_APPROVAL';
+
    const { data: keys, isLoading } = useQuery({
       queryKey: ['keys'],
       queryFn: getApiKeys
@@ -47,11 +50,35 @@ export default function ApiKeys() {
             </div>
             <button 
                onClick={() => { setShowNewKeyModal(true); setRevealedSecret(null); setNewKeyName(''); }}
-               className="flex items-center gap-2 bg-brand-600 hover:bg-brand-500 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-lg shadow-brand-500/20"
+               disabled={isPendingApproval}
+               className={clsx(
+                  "flex items-center gap-2 px-4 py-2 rounded-lg font-medium shadow-lg transition-colors",
+                  isPendingApproval 
+                    ? "bg-surface-800 text-slate-500 cursor-not-allowed shadow-none" 
+                    : "bg-brand-600 hover:bg-brand-500 text-white shadow-brand-500/20"
+               )}
             >
                <Plus className="w-4 h-4" /> Create Key
             </button>
          </div>
+
+         {isPendingApproval && (
+            <div className="bg-amber-500/10 border border-amber-500/20 p-6 rounded-xl mb-8 flex flex-col items-center justify-center text-center">
+               <AlertTriangle className="w-8 h-8 text-amber-500 mb-3" />
+               <h3 className="text-lg font-semibold text-amber-500 mb-1">Account Pending Approval</h3>
+               <p className="text-sm text-surface-400 max-w-lg">
+                  Your B2B account registration is currently under review by our administration team. 
+                  You will not be able to generate API keys or access live data until your business entity is verified. 
+                  This usually takes 1-2 business days.
+               </p>
+               <button 
+                  onClick={() => localStorage.removeItem('user_status')}
+                  className="mt-4 text-xs text-slate-500 underline"
+               >
+                 [Demo] Mock Admin Approval bypass
+               </button>
+            </div>
+         )}
 
          <div className="bg-surface-950 border border-surface-800 rounded-xl overflow-hidden shadow-sm">
             {/* Warning Banner */}

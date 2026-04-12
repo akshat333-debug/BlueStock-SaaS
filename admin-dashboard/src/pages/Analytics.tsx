@@ -132,7 +132,7 @@ export default function Analytics() {
 
         {/* Top States */}
         <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h3 className="text-base font-semibold text-slate-900 mb-6">Top 5 States by Dataset Coverage</h3>
+          <h3 className="text-base font-semibold text-slate-900 mb-6">Top 10 States by Dataset Coverage</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data.topStates} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
@@ -144,6 +144,52 @@ export default function Analytics() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+
+        {/* Requests by Endpoint (Stacked Bar) */}
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <h3 className="text-base font-semibold text-slate-900 mb-6">Requests by Endpoint (7 Days)</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data.requestsByEndpoint} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(val) => `${val / 1000}k`} />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                <Bar dataKey="autocomplete" stackId="a" fill="#3b82f6" radius={[0, 0, 4, 4]} />
+                <Bar dataKey="hierarchy" stackId="a" fill="#93c5fd" />
+                <Bar dataKey="search" stackId="a" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex gap-4 justify-center mt-4">
+             <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500 rounded-full"></div><span className="text-xs text-slate-600">Autocomplete</span></div>
+             <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-300 rounded-full"></div><span className="text-xs text-slate-600">Hierarchy</span></div>
+             <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-900 rounded-full"></div><span className="text-xs text-slate-600">Search</span></div>
+          </div>
+        </div>
+
+        {/* Usage Heat Map */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+          <h3 className="text-base font-semibold text-slate-900 mb-6">Network Heat Map (24h)</h3>
+          <div className="grid grid-cols-6 gap-2">
+            {data.hourlyUsage.map((h: { hour: string, intensity: number }, i: number) => {
+               // Determine opacity based on intensity 0-100
+               const opacity = Math.max(0.1, h.intensity / 100);
+               return (
+                 <div key={i} className="group relative">
+                   <div 
+                     className="w-full aspect-square bg-blue-600 rounded-md transition-all cursor-pointer hover:border-2 hover:border-slate-800"
+                     style={{ opacity }}
+                   ></div>
+                   <div className="absolute opacity-0 group-hover:opacity-100 bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded z-20 whitespace-nowrap pointer-events-none transition-opacity">
+                     {h.hour} - {h.intensity}% Load
+                   </div>
+                 </div>
+               );
+            })}
+          </div>
+          <p className="text-xs text-slate-500 mt-4 text-center">Hourly network ingestion intensities</p>
         </div>
       </div>
     </DashboardLayout>

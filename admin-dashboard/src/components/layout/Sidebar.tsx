@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Database, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Database, Settings, Activity } from 'lucide-react';
 import clsx from 'clsx';
 
 const navItems = [
   { name: 'Analytics', href: '/', icon: LayoutDashboard },
   { name: 'User Management', href: '/users', icon: Users },
   { name: 'Data Browser', href: '/data-browser', icon: Database },
+  { name: 'API Logs', href: '/api-logs', icon: Activity },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

@@ -110,12 +110,19 @@ export default function Users() {
                       {user.requests.toLocaleString()}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                      <button 
-                         onClick={(e) => { e.stopPropagation(); alert('User administration actions are restricted to Super Admins.'); }}
-                         className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                         <MoreVertical className="h-5 w-5" />
-                      </button>
+                      {user.status === 'PENDING_APPROVAL' ? (
+                        <div className="flex justify-end gap-2">
+                           <button onClick={(e) => { e.stopPropagation(); alert('User Approved. They can now generate API keys.'); }} className="text-emerald-600 hover:text-emerald-700 font-medium bg-emerald-50 px-2 py-1 rounded">Approve</button>
+                           <button onClick={(e) => { e.stopPropagation(); alert('User Rejected.'); }} className="text-rose-600 hover:text-rose-700 font-medium bg-rose-50 px-2 py-1 rounded">Reject</button>
+                        </div>
+                      ) : (
+                        <button 
+                           onClick={(e) => { e.stopPropagation(); alert('User administration actions are restricted to Super Admins.'); }}
+                           className="text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                           <MoreVertical className="h-5 w-5" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
