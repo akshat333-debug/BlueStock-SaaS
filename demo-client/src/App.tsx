@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import SearchAutocomplete, { SearchResult } from './components/SearchAutocomplete';
+import SearchAutocomplete from './components/SearchAutocomplete';
+import type { SearchResult } from './components/SearchAutocomplete';
 import { Send, MapPin, Building2, User } from 'lucide-react';
 
 function App() {
