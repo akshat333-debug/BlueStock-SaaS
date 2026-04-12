@@ -10,6 +10,10 @@ const geographyRoutes = require('./routes/v1/geography');
 const searchRoutes = require('./routes/v1/search');
 const keyRoutes = require('./routes/keys');
 
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+const path = require('path');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -69,6 +73,10 @@ if (process.env.NODE_ENV !== 'production') {
 // ============================================
 // ROUTES
 // ============================================
+
+// Documentation
+const swaggerDocument = YAML.load(path.join(__dirname, 'docs', 'swagger.yaml'));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Health & stats
 app.use('/api', healthRoutes);
