@@ -130,11 +130,13 @@ export default function ApiKeys() {
                                  <div className="flex justify-end gap-2">
                                     {k.isActive && (
                                        <>
-                                          <button onClick={() => { if(confirm('Regenerate secret? The old one will be invalidated.')) { fetch(`/api/v1/keys/${k.id}/regenerate`, {method:'POST'}).then(r=>r.json()).then(d=>{if(d.success) alert('New secret: ' + d.data.secret); queryClient.invalidateQueries({queryKey:['keys']}); }) } }} className="text-xs text-brand-400 hover:text-brand-300 bg-brand-500/10 px-2 py-1 rounded border border-brand-500/20" title="Regenerate Secret">
+                                          <button onClick={() => { if(confirm('Regenerate secret? The old one will be invalidated.')) { fetch(`/api/v1/keys/${k.id}/regenerate`, {method:'POST'}).then(r=>r.json()).then(d=>{if(d.success) alert('New secret: ' + d.data.secret); queryClient.invalidateQueries({queryKey:['keys']}); }) } }} className="flex items-center gap-1 text-xs text-brand-400 hover:text-brand-300 bg-brand-500/10 px-2 py-1 rounded border border-brand-500/20" title="Regenerate Secret">
                                              <RefreshCw className="w-3 h-3" />
+                                             <span className="sr-only sm:not-sr-only">Regenerate</span>
                                           </button>
-                                          <button onClick={() => { if(confirm('Revoke this key? It will be deactivated immediately.')) { fetch(`/api/v1/keys/${k.id}/revoke`, {method:'PATCH'}).then(()=> queryClient.invalidateQueries({queryKey:['keys']})) } }} className="text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20" title="Revoke Key">
+                                          <button onClick={() => { if(confirm('Revoke this key? It will be deactivated immediately.')) { fetch(`/api/v1/keys/${k.id}/revoke`, {method:'PATCH'}).then(()=> queryClient.invalidateQueries({queryKey:['keys']})) } }} className="flex items-center gap-1 text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20" title="Revoke Key">
                                              <Trash2 className="w-3 h-3" />
+                                             <span className="sr-only sm:not-sr-only">Revoke</span>
                                           </button>
                                        </>
                                     )}

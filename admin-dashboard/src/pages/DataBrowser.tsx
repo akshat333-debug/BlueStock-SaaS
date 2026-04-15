@@ -92,49 +92,51 @@ export default function DataBrowser() {
              {loadingVillages ? (
                 <div className="p-12 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>
              ) : (
-                <div className="overflow-x-auto">
-                   <table className="min-w-full divide-y divide-slate-200">
-                      <thead className="bg-slate-50">
-                         <tr>
-                           <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-slate-900">MDDS Code</th>
-                           <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-slate-900">Village Name</th>
-                           <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-slate-900">Sub-District</th>
-                           <th scope="col" className="px-6 py-3.5 text-right text-sm font-semibold text-slate-900">Coverage Status</th>
-                         </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200 bg-white">
-                         {villagesRes?.data?.map((v: any) => (
-                           <tr key={v.id} className="hover:bg-slate-50">
-                              <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900 font-mono">{v.code}</td>
-                              <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{v.name}</td>
-                              <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{v.subDistrict?.name || '—'}</td>
-                              <td className="whitespace-nowrap px-6 py-4 text-sm text-right">
-                                 <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Synced</span>
-                              </td>
-                           </tr>
-                         ))}
-                      </tbody>
-                   </table>
-                </div>
+                <>
+                   <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200">
+                         <thead className="bg-slate-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-slate-900">MDDS Code</th>
+                              <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-slate-900">Village Name</th>
+                              <th scope="col" className="px-6 py-3.5 text-left text-sm font-semibold text-slate-900">Sub-District</th>
+                              <th scope="col" className="px-6 py-3.5 text-right text-sm font-semibold text-slate-900">Coverage Status</th>
+                            </tr>
+                         </thead>
+                         <tbody className="divide-y divide-slate-200 bg-white">
+                            {villagesRes?.data?.map((v: any) => (
+                              <tr key={v.id} className="hover:bg-slate-50">
+                                 <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-slate-900 font-mono">{v.code}</td>
+                                 <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">{v.name}</td>
+                                 <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">{v.subDistrict?.name || '—'}</td>
+                                 <td className="whitespace-nowrap px-6 py-4 text-sm text-right">
+                                    <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">Synced</span>
+                                 </td>
+                              </tr>
+                            ))}
+                         </tbody>
+                      </table>
+                   </div>
 
-                {/* Pagination & Page Size */}
-                <div className="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
-                   <div className="flex items-center gap-2 text-sm text-slate-600">
-                     <span>Showing {villagesRes?.data?.length || 0} records</span>
-                     <span className="text-slate-300">|</span>
-                     <span>Page size:</span>
-                     <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="text-sm border border-slate-300 rounded px-2 py-1">
-                       <option value={500}>500</option>
-                       <option value={5000}>5,000</option>
-                       <option value={10000}>10,000</option>
-                     </select>
+                   {/* Pagination & Page Size */}
+                   <div className="px-6 py-4 border-t border-slate-200 flex justify-between items-center bg-slate-50">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <span>Showing {villagesRes?.data?.length || 0} records</span>
+                        <span className="text-slate-300">|</span>
+                        <span>Page size:</span>
+                        <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="text-sm border border-slate-300 rounded px-2 py-1">
+                          <option value={500}>500</option>
+                          <option value={5000}>5,000</option>
+                          <option value={10000}>10,000</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1} className="px-3 py-1 text-sm border border-slate-300 rounded disabled:opacity-50">Previous</button>
+                        <span className="text-sm text-slate-600">Page {currentPage}</span>
+                        <button onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 text-sm border border-slate-300 rounded">Next</button>
+                      </div>
                    </div>
-                   <div className="flex items-center gap-2">
-                     <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1} className="px-3 py-1 text-sm border border-slate-300 rounded disabled:opacity-50">Previous</button>
-                     <span className="text-sm text-slate-600">Page {currentPage}</span>
-                     <button onClick={() => setCurrentPage(p => p + 1)} className="px-3 py-1 text-sm border border-slate-300 rounded">Next</button>
-                   </div>
-                </div>
+                </>
              )}
          </div>
       ) : (
