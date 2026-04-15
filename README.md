@@ -1,71 +1,212 @@
-# Bluestock SaaS — Village API Platform
+# Bluestock SaaS — All India Villages API
 
-> A production-grade DaaS (Data-as-a-Service) platform providing a RESTful API for topological and geographical data of all 570,000+ villages across India.
-
-![Admin UI](./assets/admin_dashboard.png) *(Preview of Admin Analytics)*
-
-## Overview
-Bluestock SaaS allows developer clients (B2B) to integrate verified Government of India (MDDS) topological hierarchy data directly into their applications. The API allows cascading lookups from States -> Districts -> Sub-Districts -> Villages natively.
-
-The platform is divided into three distinct frontend applications speaking to a single, high-performance Node/Express API with PostgreSQL.
+> A production-grade SaaS platform providing a comprehensive REST API for India's complete village-level geographical data. Built for B2B clients who need reliable, standardized address data for drop-down menus and form autocomplete.
 
 ## Architecture
 
-* **Backend / API Wrapper (`/api`)**: Built with Express.js and Prisma ORM. Secures routes via Upstash Redis (rate limiting) and SHA-256 encrypted `X-API-Key` custom authentication. Sits in front of a NeonDB PostgreSQL database with the `pg_trgm` extension for ultra-fast fuzzy searching.
-* **B2B Portal (`/b2b-portal`)**: A developer-facing React application designed like Stripe/Vercel. Allows developers to authenticate, view their cycle quotas visually via dashboards, and securely generate "reveal-once" API keys.
-* **Admin Dashboard (`/admin-dashboard`)**: A back-office tool for Bluestock internal operations. Views platform analytics, subscription insights, and a Data Browser to traverse the 600k row database directly in the UI.
-* **Demo Client (`/demo-client`)**: A lightweight reference UI application mimicking how an end-user developer would consume the geographical endpoints using React hooks.
+```
+┌────────────────────────────────────────────────────────────┐
+│                     CLIENT LAYER                            │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │ Admin Panel   │  │ B2B Portal   │  │ Demo Client  │      │
+│  │ :5173         │  │ :5174        │  │ :5175        │      │
+│  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘      │
+└─────────┼─────────────────┼─────────────────┼──────────────┘
+          │                 │                 │
+          ▼                 ▼                 ▼
+┌────────────────────────────────────────────────────────────┐
+│               EXPRESS API GATEWAY (:3000)                   │
+│  • JWT Auth    • API Key+Secret   • Rate Limiting (Redis)  │
+│  • requestId   • Burst Limiter    • Helmet Security        │
+│  • API Logger  • CORS             • Swagger Docs           │
+├────────────────────────────────────────────────────────────┤
+│            /api/v1/*    /api/auth/*    /api-docs            │
+└────────────────────────────────────────────────────────────┘
+          │                         │
+          ▼                         ▼
+┌───────────────────┐    ┌───────────────────┐
+│  NeonDB PostgreSQL │    │  Upstash Redis    │
+│  • 9 tables (3NF)  │    │  • Rate limits    │
+│  • 570k+ villages  │    │  • Key cache      │
+│  • pg_trgm index   │    │  • Session data   │
+└───────────────────┘    └───────────────────┘
+```
 
 ## Technology Stack
-- **Database**: PostgreSQL 17 (NeonDB Cloud)
-- **Object-Relational Mapping**: Prisma Client (v5.22.0)
-- **Caching & Rate Limiting**: Upstash Redis via `ioredis`
-- **Backend API**: Node.js & Express 5
-- **Frontend Frameworks**: React 18, Vite, TypeScript
-- **Styling**: Tailwind CSS v4, Lucide Icons, Recharts
-- **Data Pipeline**: Python 3 ETL Script with `psycopg2` & `pandas`
 
-## Live API Endpoints
+| Layer | Technology |
+|-------|-----------|
+| Backend | Node.js, Express 5 |
+| Database | PostgreSQL 17 (NeonDB) |
+| ORM | Prisma 5 |
+| Cache | Upstash Redis via ioredis |
+| Frontend | React 18, Vite, TypeScript |
+| Styling | Tailwind CSS v4, Lucide Icons |
+| Charts | Recharts (6 chart types) |
+| State | Zustand + React Query |
+| Auth | JWT (24h) + bcrypt API secrets |
+| Docs | Swagger/OpenAPI 3.0 |
+| CI/CD | GitHub Actions |
+| Data Pipeline | Python 3 (pandas, psycopg2) |
 
-| Endpoint | Description | Auth Required |
-|----------|-------------|---------------|
-| `POST /api/v1/keys` | Generate a new `ak_` & `as_` API Key pair | Internal |
-| `GET /api/v1/states` | Fetch list of all 30 available states | `X-API-Key` & `Secret` |
-| `GET /states/:id/districts` | Fetch districts belonging to a specific state | `X-API-Key` & `Secret` |
-| `GET /districts/:id/subdistricts` | Fetch sub-districts within a district | `X-API-Key` & `Secret` |
-| `GET /subdistricts/:id/villages` | Fetch villages belonging to a sub-district | `X-API-Key` & `Secret` |
+## API Endpoints
 
-*Note: Access to state-level data cascades is dependent on the `User`'s subscription plan (e.g., Free vs. Premium vs. Pro).*
+### Authentication
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/auth/register` | B2B self-registration |
+| `POST` | `/api/auth/login` | JWT login (24h token) |
+| `GET` | `/api/auth/me` | Current user profile |
 
-## Data Import Workflow
-The `dataset/` directory (ignored by git due to size) contains 30 raw `.xls`/`.ods` files from the Government of India MDDS database. 
+### Geography (requires `X-API-Key`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/states` | List all states/UTs |
+| `GET` | `/api/v1/states/:id/districts` | Districts by state |
+| `GET` | `/api/v1/districts/:id/subdistricts` | Sub-districts by district |
+| `GET` | `/api/v1/subdistricts/:id/villages` | Villages by sub-district |
 
-To ingest this data dynamically:
-```bash
-python3 scripts/import_data.py
+### Search (requires `X-API-Key`)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/search` | Full-text village search |
+| `GET` | `/api/v1/autocomplete` | Typeahead suggestions |
+
+### API Key Management
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/keys` | List keys |
+| `POST` | `/api/v1/keys` | Generate key pair |
+| `PATCH` | `/api/v1/keys/:id/revoke` | Revoke a key |
+| `POST` | `/api/v1/keys/:id/regenerate` | Regenerate secret |
+
+## Response Format
+
+```json
+{
+  "success": true,
+  "count": 25,
+  "data": [...],
+  "meta": {
+    "requestId": "req_a1b2c3d4e5f67890",
+    "responseTime": 47,
+    "rateLimit": {
+      "remaining": 4850,
+      "limit": 5000,
+      "reset": "2024-01-15T23:59:59.999Z"
+    }
+  }
+}
 ```
-*Note: This utilizes a high-throughput, bulk-upsert methodology capable of inserting 600,000 unique records in under ~60 minutes while verifying duplicates natively.*
+
+## Rate Limits
+
+| Plan | Daily | Burst/min | Price |
+|------|-------|-----------|-------|
+| Free | 5,000 | 100 | $0 |
+| Premium | 50,000 | 500 | $49/mo |
+| Pro | 300,000 | 2,000 | $199/mo |
+| Unlimited | 1,000,000 | 5,000 | $499/mo |
+
+## Security
+
+- **Helmet** security headers on all responses
+- **bcrypt** hashed API secrets (never stored plaintext)
+- **JWT** authentication with 24-hour expiry
+- **Per-key rate limiting** via Redis (daily + burst)
+- **State access control** per user subscription plan
+- **CORS** restricted to allowed origins in production
+
+## Data Coverage
+
+- **36** States and Union Territories
+- **700+** Districts
+- **6,000+** Sub-Districts
+- **570,385** Villages
+- Source: Government of India MDDS database
 
 ## Getting Started
 
-1. Clone the repository and install root dependencies:
+### Prerequisites
+- Node.js 18+
+- PostgreSQL (or NeonDB account)
+- Redis (or Upstash account)
+
+### Setup
+
 ```bash
+# 1. Clone and install
 git clone https://github.com/akshat333-debug/BlueStock-SaaS.git
+cd BlueStock-SaaS
 npm install
-```
 
-2. Generate Prisma typings:
-```bash
+# 2. Configure environment
+cp .env.example .env
+# Fill in DATABASE_URL, REDIS_URL, JWT_SECRET
+
+# 3. Generate Prisma client
 npm run prisma:generate
+
+# 4. Run database migrations
+npm run prisma:migrate
+
+# 5. Import village data (optional — requires dataset files)
+python3 scripts/import_data.py
 ```
 
-3. Spin up the backend API and all frontend apps simultaneously in 4 separate terminals:
+### Development
+
 ```bash
-npm run dev                  # Terminal 1: Backend API (Port 3000)
-cd admin-dashboard && npm run dev  # Terminal 2: Admin Dashboard (Port 5173)
-cd b2b-portal && npm run dev       # Terminal 3: Developer Portal (Port 5174)
-cd demo-client && npm run dev      # Terminal 4: Demo App (Port 5175)
+# Terminal 1: Backend API (Port 3000)
+npm run dev
+
+# Terminal 2: Admin Dashboard (Port 5173)
+cd admin-dashboard && npm run dev
+
+# Terminal 3: B2B Developer Portal (Port 5174)
+cd b2b-portal && npm run dev
+
+# Terminal 4: Demo Client App (Port 5175)
+cd demo-client && npm run dev
+```
+
+### Testing
+
+```bash
+npm test          # Run all backend tests
+```
+
+### API Documentation
+
+Once the server is running, visit:
+- **Swagger UI**: http://localhost:3000/api-docs
+- **Health Check**: http://localhost:3000/api/health
+
+## Project Structure
+
+```
+├── api/                     # Express.js backend
+│   ├── config/              # Database & Redis config
+│   ├── docs/                # Swagger YAML
+│   ├── middleware/           # Auth, rate limiter, logger
+│   ├── routes/              # API route handlers
+│   │   ├── auth.js          # JWT register/login
+│   │   ├── keys.js          # API key CRUD
+│   │   └── v1/              # Geography & search routes
+│   └── utils/               # Response formatter
+├── admin-dashboard/         # React admin panel
+├── b2b-portal/              # React developer portal
+├── demo-client/             # Contact form demo app
+├── prisma/                  # Database schema & migrations
+├── scripts/                 # Python data import
+├── .github/workflows/       # CI/CD pipeline
+└── vercel.json              # Deployment config
 ```
 
 ## Contributing
-Please see `AGENTS.md` and `CLAUDE.md` for specific architectural boundaries and the GSD operational framework used in this project.
+
+See `AGENTS.md` for architectural boundaries and the GSD operational framework.
+
+## License
+
+Proprietary — Bluestock Fintech © 2024

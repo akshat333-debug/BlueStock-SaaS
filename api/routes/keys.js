@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
  * Format: ak_{random16chars} (Public Key) -> as_{random32chars} (Secret)
  */
 function generateApiKeyPair() {
-    const key = `ak_${crypto.randomBytes(8).toString('hex')}`;
+    const key = `ak_${crypto.randomBytes(16).toString('hex')}`;
     const secret = `as_${crypto.randomBytes(16).toString('hex')}`;
     
     // Hash the secret for storage

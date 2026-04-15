@@ -1,7 +1,26 @@
 openapi: 3.0.0
 info:
   title: Bluestock SaaS Village API
-  description: Access authentic geographical and topological village data for India, mapping Country -> States -> Districts -> SubDistricts -> Villages natively.
+  description: |
+    Production-grade REST API providing hierarchical geographical data for all 570,000+ Indian villages.
+    
+    ## Authentication
+    All API requests require an `X-API-Key` header. Write operations also require `X-API-Secret`.
+    
+    ## Rate Limits
+    | Plan | Daily Requests | Burst (per min) |
+    |------|---------------|-----------------|
+    | Free | 5,000 | 100 |
+    | Premium | 50,000 | 500 |
+    | Pro | 300,000 | 2,000 |
+    | Unlimited | 1,000,000 | 5,000 |
+    
+    ## Quick Start
+    ```bash
+    # 1. Get your API key from the B2B portal
+    # 2. Make your first request:
+    curl -H "X-API-Key: ak_YOUR_KEY_HERE" http://localhost:3000/api/v1/states
+    ```
   version: 1.0.0
   contact:
     name: API Support
@@ -10,6 +29,8 @@ info:
 servers:
   - url: http://localhost:3000/api/v1
     description: Local Development Server
+  - url: https://api.villageapi.com/v1
+    description: Production Server
 
 components:
   securitySchemes:
@@ -17,7 +38,12 @@ components:
       type: apiKey
       in: header
       name: X-API-Key
-      description: Provide your active B2B API Key (ak_XXXX) to access data.
+      description: Provide your active B2B API Key (ak_XXXX)
+    ApiSecretAuth:
+      type: apiKey
+      in: header
+      name: X-API-Secret
+      description: Required for write operations (as_XXXX)
 
 security:
   - ApiKeyAuth: []
@@ -25,10 +51,9 @@ security:
 paths:
   /keys:
     get:
-      summary: Retrieves all generated API Keys
-      description: Restricted endpoint to list your associated active keys.
-      tags:
-        - Authentication
+      summary: List API Keys
+      description: Retrieves all API keys for the current authenticated user.
+      tags: [Authentication]
       responses:
         '200':
           description: A list of API key mappings
@@ -37,17 +62,14 @@ paths:
               schema:
                 type: object
                 properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: array
-        '401':
-          description: Unauthorized request
+                  success: { type: boolean }
+                  data: { type: array }
     post:
-      summary: Generates a new API Key Pair
-      description: Creates a new public key and secret token. The secret token is returned exactly ONCE successfully hashing it into the database for validation.
-      tags:
-        - Authentication
+      summary: Generate New API Key Pair
+      description: |
+        Creates a new `ak_` public key and `as_` secret token. 
+        **The secret is returned exactly ONCE.** Store it securely.
+      tags: [Authentication]
       requestBody:
         required: true
         content:
@@ -57,102 +79,171 @@ paths:
               properties:
                 name:
                   type: string
-                  example: "B2B Production App"
+                  example: "Production Server"
       responses:
         '200':
-          description: Successfully generated the key
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      key:
-                        type: string
-                        example: "ak_5103d5ed..."
-                      secret:
-                        type: string
-                        example: "as_a52bf..."
+          description: Successfully generated the key pair
 
   /states:
     get:
-      summary: Retrieve standard States mapping
-      description: Returns all Indian States/UTs available on the mapping hierarchy.
-      tags:
-        - Geographic Nodal Navigation
+      summary: List All States
+      description: Returns all Indian States and Union Territories.
+      tags: [Geography]
       responses:
         '200':
-          description: A list of States
-        '429':
-          description: Rate limited (Too Many Requests)
+          description: Array of states
+          content:
+            application/json:
+              example:
+                success: true
+                count: 36
+                data:
+                  - { id: 1, name: "Maharashtra", code: "27" }
 
   /states/{id}/districts:
     get:
-      summary: Retrieve Districts via State ID
-      tags:
-        - Geographic Nodal Navigation
+      summary: Districts by State
+      tags: [Geography]
       parameters:
         - in: path
           name: id
           required: true
-          schema:
-            type: integer
-          description: The ID of the parent State.
+          schema: { type: integer }
+          description: State ID
       responses:
         '200':
-          description: List of connected districts
+          description: List of districts in the state
         '403':
-          description: Unauthorized state-hierarchy access due to Plan restrictions.
+          description: Access denied — plan does not cover this state
 
   /districts/{id}/subdistricts:
     get:
-      summary: Retrieve SubDistricts via District ID
-      tags:
-        - Geographic Nodal Navigation
+      summary: Sub-Districts by District
+      tags: [Geography]
       parameters:
         - in: path
           name: id
           required: true
-          schema:
-            type: integer
+          schema: { type: integer }
       responses:
         '200':
-          description: List of connected sub-districts
-          
+          description: List of sub-districts
+
   /subdistricts/{id}/villages:
     get:
-      summary: Retrieve Villages via SubDistrict ID
-      tags:
-        - Geographic Nodal Navigation
+      summary: Villages by Sub-District
+      tags: [Geography]
       parameters:
         - in: path
           name: id
           required: true
-          schema:
-            type: integer
+          schema: { type: integer }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 500 }
       responses:
         '200':
-          description: List of connected villages. Provides full metadata (Pincodes, MDDS, and Coordinates).
+          description: Paginated list of villages
 
-  /autocomplete:
+  /search:
     get:
-      summary: Fuzzy Match Village AutoComplete
-      description: Extremely fast pattern matching search bridging `pg_trgm` logic. Designed to connect instantly with frontend text input drops.
-      tags:
-        - Search Analytics
+      summary: Search Villages
+      description: Full-text search across all village records with hierarchical filtering.
+      tags: [Search]
       parameters:
         - in: query
           name: q
           required: true
-          schema:
-            type: string
-          description: Search term (min 2 characters) for the Village Name (e.g. "Juhu").
+          schema: { type: string }
+          description: Search term (min 2 characters)
+        - in: query
+          name: state
+          schema: { type: string }
+          description: Filter by state name
+        - in: query
+          name: district
+          schema: { type: string }
+        - in: query
+          name: subDistrict
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, default: 10 }
       responses:
         '200':
-          description: Returns an array of highly-mapped matched formats.
+          description: Matching villages with full hierarchy
+          content:
+            application/json:
+              example:
+                success: true
+                count: 3
+                data:
+                  - value: "village_id_525002"
+                    label: "Manibeli"
+                    fullAddress: "Manibeli, Akkalkuwa, Nandurbar, Maharashtra, India"
+                    hierarchy:
+                      village: "Manibeli"
+                      subDistrict: "Akkalkuwa"
+                      district: "Nandurbar"
+                      state: "Maharashtra"
+                      country: "India"
+
+  /autocomplete:
+    get:
+      summary: Typeahead Autocomplete
+      description: |
+        Ultra-fast fuzzy matching using PostgreSQL `pg_trgm`. Designed for real-time dropdown suggestions.
+        
+        **Code Examples:**
+        
+        ### cURL
+        ```bash
+        curl -H "X-API-Key: ak_YOUR_KEY" \
+          "http://localhost:3000/api/v1/autocomplete?q=mane"
+        ```
+        
+        ### JavaScript (fetch)
+        ```javascript
+        const res = await fetch('/api/v1/autocomplete?q=mane', {
+          headers: { 'X-API-Key': 'ak_YOUR_KEY' }
+        });
+        const data = await res.json();
+        console.log(data.data); // [{label: "Manibeli", fullAddress: "..."}]
+        ```
+        
+        ### Python (requests)
+        ```python
+        import requests
+        r = requests.get('http://localhost:3000/api/v1/autocomplete',
+          params={'q': 'mane'},
+          headers={'X-API-Key': 'ak_YOUR_KEY'})
+        print(r.json()['data'])
+        ```
+        
+        ### PHP (cURL)
+        ```php
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, "http://localhost:3000/api/v1/autocomplete?q=mane");
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-API-Key: ak_YOUR_KEY"]);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        echo $response;
+        ```
+      tags: [Search]
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema: { type: string }
+          description: Search term (min 2 characters)
+        - in: query
+          name: hierarchyLevel
+          schema: { type: string, enum: [village, subDistrict, district, state] }
+      responses:
+        '200':
+          description: Autocomplete suggestions with full hierarchy
         '400':
-          description: Malformed query payload.
+          description: Query too short or invalid
