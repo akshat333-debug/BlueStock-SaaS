@@ -37,7 +37,7 @@ app.use(helmet({
 // CORS — allow all origins in dev, restrict in production
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://villageapi.com', 'https://admin.villageapi.com']
+    ? [/\.vercel\.app$/, 'https://villageapi.com', 'https://admin.villageapi.com']
     : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-API-Secret'],
