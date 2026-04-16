@@ -1,0 +1,20 @@
+# Vercel Deployment Ignore
+
+# Documentation & Knowledge Base
+obsidian-vault/
+graphify-out/
+GSD/
+.claude
+AGENTS.md
+CLAUDE.md
+Instructions.md
+cross_verification_report.md
+
+# Frontends (API is the only thing Vercel deploys here)
+admin-dashboard/
+b2b-portal/
+demo-client/
+
+# Other Scripts
+scripts/
+dataset/

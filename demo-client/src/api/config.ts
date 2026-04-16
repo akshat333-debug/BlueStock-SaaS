@@ -7,8 +7,8 @@ import axios from 'axios';
 // export const BASE_URL = 'http://localhost:3000/api/v1';
 // export const API_KEY = 'your_test_key_here';
 
-export const BASE_URL = 'http://localhost:3000/api/v1';
-export const API_KEY = 'ak_1996551b6f99bb84';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+export const API_KEY = import.meta.env.VITE_API_KEY || 'ak_1996551b6f99bb84';
 
 /**
  * Configure Axios client with the required X-API-Key header.

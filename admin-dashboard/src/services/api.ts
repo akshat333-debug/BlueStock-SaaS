@@ -7,7 +7,9 @@
  */
 import axios from 'axios';
 
-const api = axios.create({ baseURL: '/api/v1' });
+const api = axios.create({ 
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1' 
+});
 
 // ─── Analytics (mock telemetry — aggregation pipeline not in Phase 1) ───
 export const getAnalyticsOverview = async () => {
