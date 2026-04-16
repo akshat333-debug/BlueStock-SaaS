@@ -92,7 +92,7 @@ export const getUsers = async () => {
 // ─── ApiLogs (mock telemetry) ───
 export const getApiLogs = async () => {
   return {
-    data: Array.from({ length: 50 }).map((_, i) => {
+    data: Array.from({ length: 50 }).map(() => {
       const statuses = [200, 200, 200, 201, 400, 401, 403, 429, 500];
       const endpoints = ['/api/v1/states', '/api/v1/districts', '/api/v1/search', '/api/v1/autocomplete', '/api/v1/keys'];
       return {

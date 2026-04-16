@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getUsers } from '../services/api';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { Search, Filter, MoreVertical, ShieldCheck, Mail, Building, ChevronRight, ArrowUpDown } from 'lucide-react';
+import { Search, MoreVertical, ShieldCheck, Mail, Building, ChevronRight, ArrowUpDown } from 'lucide-react';
 import clsx from 'clsx';
 
 type SortKey = 'businessName' | 'status' | 'planType' | 'requests';

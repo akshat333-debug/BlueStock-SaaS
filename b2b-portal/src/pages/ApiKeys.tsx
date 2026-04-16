@@ -106,7 +106,7 @@ export default function ApiKeys() {
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-surface-800 bg-surface-950">
-                        {keys?.map((k) => (
+                        {keys?.map((k: any) => (
                            <tr key={k.id} className="hover:bg-surface-800/30 transition-colors group">
                               <td className="whitespace-nowrap px-6 py-4">
                                  <div className="flex items-center gap-3">
