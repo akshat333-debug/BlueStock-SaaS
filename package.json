@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon api/index.js",
     "start": "node api/index.js",
+    "postinstall": "prisma generate",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:studio": "npx prisma studio",
@@ -22,6 +23,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.1",
@@ -34,7 +36,6 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "@prisma/client": "^5.22.0",
     "cross-env": "^10.1.0",
     "jest": "^30.3.0",
     "jest-mock-extended": "^4.0.0",
